@@ -15,7 +15,7 @@ import { FileText, Loader2, BookOpen, RefreshCw, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Home() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading } = useAuth();
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [viewingSummaryId, setViewingSummaryId] = useState<string | null>(null);
   const [bookTitle, setBookTitle] = useState('');
@@ -26,13 +26,13 @@ export default function Home() {
   // Fetch documents
   const { data: documents, isLoading: documentsLoading } = trpc.documents.list.useQuery(
     undefined,
-    { enabled: isAuthenticated, refetchInterval: 5000 }
+    { refetchInterval: 5000 }
   );
 
   // Fetch summaries
   const { data: summaries, isLoading: summariesLoading } = trpc.summaries.list.useQuery(
     undefined,
-    { enabled: isAuthenticated, refetchInterval: 5000 }
+    { refetchInterval: 5000 }
   );
 
   // Fetch specific summary for viewing
@@ -90,63 +90,6 @@ export default function Home() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <header className="border-b border-gray-200 bg-white">
-          <div className="container py-4">
-            <ShortformLogo />
-          </div>
-        </header>
-        <main className="flex-1 flex items-center justify-center bg-gradient-to-br from-yellow-50 to-white">
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <CardTitle className="text-3xl">Welcome to Shortform</CardTitle>
-              <CardDescription className="text-base">
-                Transform your documents into premium Shortform-style summaries with deep research
-                and expert insights
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                  <BookOpen className="h-5 w-5 text-yellow-600 mt-0.5" />
-                  <div>
-                    <p className="font-semibold">Multi-Source Research</p>
-                    <p className="text-sm text-muted-foreground">
-                      Get insights from 5-10 related books and experts
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <FileText className="h-5 w-5 text-yellow-600 mt-0.5" />
-                  <div>
-                    <p className="font-semibold">Multiple Formats</p>
-                    <p className="text-sm text-muted-foreground">
-                      Support for PDF, DOCX, TXT, and RTF files
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Eye className="h-5 w-5 text-yellow-600 mt-0.5" />
-                  <div>
-                    <p className="font-semibold">Professional Formatting</p>
-                    <p className="text-sm text-muted-foreground">
-                      Polished summaries with research callouts and citations
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <Button asChild className="w-full" size="lg">
-                <a href={getLoginUrl()}>Sign In to Get Started</a>
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    );
-  }
-
   // If viewing a summary, show the full summary renderer
   if (viewingSummary && viewingSummary.status === 'completed') {
     return (
@@ -176,7 +119,7 @@ export default function Home() {
         <div className="container py-4 flex items-center justify-between">
           <ShortformLogo />
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">Welcome, {user?.name || 'User'}</span>
+            <span className="text-sm text-gray-600">Shortform Summary Generator</span>
           </div>
         </div>
       </header>

@@ -38,7 +38,7 @@ export const appRouter = router({
 
   documents: router({
     // Upload and process a document
-    upload: protectedProcedure
+    upload: publicProcedure
       .input(z.object({
         filename: z.string(),
         fileData: z.string(), // base64 encoded file data
@@ -46,7 +46,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const { filename, fileData, fileSize } = input;
-        const userId = ctx.user.id;
+        const userId = ctx.user?.id || 'anonymous';
 
         // Validate file type
         const fileType = getFileType(filename);
@@ -93,14 +93,15 @@ export const appRouter = router({
       }),
 
     // Get user's documents
-    list: protectedProcedure
+    list: publicProcedure
       .query(async ({ ctx }) => {
-        const documents = await getUserDocuments(ctx.user.id);
+        const userId = ctx.user?.id || 'anonymous';
+        const documents = await getUserDocuments(userId);
         return documents;
       }),
 
     // Get a specific document
-    get: protectedProcedure
+    get: publicProcedure
       .input(z.object({
         documentId: z.string(),
       }))
@@ -111,7 +112,8 @@ export const appRouter = router({
           throw new Error('Document not found');
         }
 
-        if (document.userId !== ctx.user.id) {
+        const userId = ctx.user?.id || 'anonymous';
+        if (document.userId !== userId) {
           throw new Error('Unauthorized access to document');
         }
 
@@ -121,7 +123,7 @@ export const appRouter = router({
 
   summaries: router({
     // Generate a Shortform-style summary for a document
-    generate: protectedProcedure
+    generate: publicProcedure
       .input(z.object({
         documentId: z.string(),
         bookTitle: z.string().optional(),
@@ -129,7 +131,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const { documentId, bookTitle, bookAuthor } = input;
-        const userId = ctx.user.id;
+        const userId = ctx.user?.id || 'anonymous';
 
         // Get the document
         const document = await getDocument(documentId);
@@ -187,14 +189,15 @@ export const appRouter = router({
       }),
 
     // Get user's summaries
-    list: protectedProcedure
+    list: publicProcedure
       .query(async ({ ctx }) => {
-        const summaries = await getUserSummaries(ctx.user.id);
+        const userId = ctx.user?.id || 'anonymous';
+        const summaries = await getUserSummaries(userId);
         return summaries;
       }),
 
     // Get a specific summary with research sources
-    get: protectedProcedure
+    get: publicProcedure
       .input(z.object({
         summaryId: z.string(),
       }))
@@ -205,7 +208,8 @@ export const appRouter = router({
           throw new Error('Summary not found');
         }
 
-        if (summary.userId !== ctx.user.id) {
+        const userId = ctx.user?.id || 'anonymous';
+        if (summary.userId !== userId) {
           throw new Error('Unauthorized access to summary');
         }
 
@@ -218,13 +222,14 @@ export const appRouter = router({
       }),
 
     // Get summary by document ID
-    getByDocument: protectedProcedure
+    getByDocument: publicProcedure
       .input(z.object({
         documentId: z.string(),
       }))
       .query(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 'anonymous';
         const document = await getDocument(input.documentId);
-        if (!document || document.userId !== ctx.user.id) {
+        if (!document || document.userId !== userId) {
           throw new Error('Document not found or unauthorized');
         }
 
