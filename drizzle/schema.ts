@@ -38,7 +38,7 @@ export type Document = typeof documents.$inferSelect;
 export type InsertDocument = typeof documents.$inferInsert;
 
 /**
- * Generated Shortform-style summaries
+ * Generated Jonathan's Jots-style summaries
  */
 export const summaries = mysqlTable("summaries", {
   id: varchar("id", { length: 64 }).primaryKey(),
@@ -52,7 +52,7 @@ export const summaries = mysqlTable("summaries", {
   // Summary content sections
   onePageSummary: text("onePageSummary"),
   introduction: text("introduction"),
-  mainContent: text("mainContent"), // JSON structure with sections and Shortform notes
+  mainContent: text("mainContent"), // JSON structure with sections and Jots notes
   
   // Processing metadata
   status: mysqlEnum("status", ["generating", "completed", "failed"]).default("generating").notNull(),
@@ -60,7 +60,7 @@ export const summaries = mysqlTable("summaries", {
   
   // AI generation metadata
   researchSourcesCount: int("researchSourcesCount").default(0), // number of external sources cited
-  shortformNotesCount: int("shortformNotesCount").default(0), // number of research callouts
+  jotsNotesCount: int("jotsNotesCount").default(0), // number of research callouts
   
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),

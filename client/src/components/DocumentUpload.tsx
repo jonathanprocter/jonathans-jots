@@ -95,7 +95,7 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
           Upload Document
         </CardTitle>
         <CardDescription>
-          Upload a .pdf, .docx, .txt, or .rtf file to generate a Shortform-style summary
+          Upload a .pdf, .docx, .txt, or .rtf file to generate a Jonathan's Jots-style summary
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

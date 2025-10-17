@@ -18,7 +18,7 @@ import {
 } from "./db";
 import { storagePut } from "./storage";
 import { processDocument, getFileType, validateFileSize } from "./documentProcessor";
-import { generateShortformPrompt, parseSummaryResponse } from "./shortformPrompt";
+import { generateJotsPrompt, parseSummaryResponse } from "./shortformPrompt";
 import { invokeLLM } from "./_core/llm";
 import { nanoid } from "nanoid";
 
@@ -296,7 +296,7 @@ async function generateSummaryAsync(
 ): Promise<void> {
   try {
     // Generate the prompt
-    const prompt = generateShortformPrompt({
+    const prompt = generateJotsPrompt({
       extractedText,
       bookTitle,
       bookAuthor,
@@ -333,7 +333,7 @@ async function generateSummaryAsync(
       introduction: parsed.introduction,
       mainContent: parsed.mainContent,
       researchSourcesCount: parsed.researchSources.length,
-      shortformNotesCount: parsed.shortformNotesCount,
+      jotsNotesCount: parsed.jotsNotesCount,
       status: 'completed',
     });
 

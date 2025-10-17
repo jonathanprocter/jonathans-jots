@@ -1,18 +1,18 @@
 /**
- * Generate comprehensive Shortform-style summary prompt based on extracted document text
- * This implements the deep research methodology that makes Shortform summaries premium quality
+ * Generate comprehensive Jonathan's Jots-style summary prompt based on extracted document text
+ * This implements the deep research methodology that makes Jonathan's Jots summaries premium quality
  */
 
-export interface ShortformPromptConfig {
+export interface JotsPromptConfig {
   extractedText: string;
   bookTitle?: string;
   bookAuthor?: string;
 }
 
-export function generateShortformPrompt(config: ShortformPromptConfig): string {
+export function generateJotsPrompt(config: JotsPromptConfig): string {
   const { extractedText, bookTitle, bookAuthor } = config;
 
-  return `You are creating a premium Shortform-style book summary. Shortform summaries are NOT just book summaries - they are ENHANCED with external research, comparative analysis, and additional expert perspectives.
+  return `You are creating a premium Jonathan's Jots-style book summary. Jonathan's Jots summaries are NOT just book summaries - they are ENHANCED with external research, comparative analysis, and additional expert perspectives.
 
 **CRITICAL: YOUR CORE MISSION**
 
@@ -37,7 +37,7 @@ When the book discusses concept X, find:
 - How different traditions approach the same concept
 
 Example template:
-"Shortform note: In *[Book Title]*, [Author Name] [agrees/contradicts/expands on] this idea by [specific explanation]. [Author] suggests [specific actionable advice]."
+"Jonathan's Jots note: In *[Book Title]*, [Author Name] [agrees/contradicts/expands on] this idea by [specific explanation]. [Author] suggests [specific actionable advice]."
 
 ### Category 2: Expert Credentials & Context
 When mentioning a person/expert:
@@ -46,7 +46,7 @@ When mentioning a person/expert:
 - What's their most relevant work?
 
 Example template:
-"(Shortform note: [Person Name], [credentials/background], is known for [achievement]. Their work in [area] provides important context because [reason].)"
+"(Jonathan's Jots note: [Person Name], [credentials/background], is known for [achievement]. Their work in [area] provides important context because [reason].)"
 
 ### Category 3: Philosophical/Scientific Foundations
 When the book makes a claim, explain:
@@ -55,7 +55,7 @@ When the book makes a claim, explain:
 - Historical origins of the concept
 
 Example template:
-"Shortform note: [Philosophy/Science] makes the distinction between [concept]. This is supported by [scientific research/historical tradition]. [Another expert] says [additional perspective]."
+"Jonathan's Jots note: [Philosophy/Science] makes the distinction between [concept]. This is supported by [scientific research/historical tradition]. [Another expert] says [additional perspective]."
 
 ### Category 4: Critical Analysis
 Don't just agree with the book - think critically:
@@ -64,7 +64,7 @@ Don't just agree with the book - think critically:
 - How do other experts challenge this?
 
 Example template:
-"Shortform note: Although [Author] recommends [X], some experts caution that [limitation]. In *[Book Title]*, [Author] argues [counterpoint]."
+"Jonathan's Jots note: Although [Author] recommends [X], some experts caution that [limitation]. In *[Book Title]*, [Author] argues [counterpoint]."
 
 ### Category 5: Practical Applications from Other Sources
 When book gives abstract advice, add concrete steps from other sources:
@@ -103,11 +103,11 @@ Generate a JSON response with the following structure:
           "text": "Main content paragraph explaining the book's ideas"
         },
         {
-          "type": "shortform_note",
+          "type": "jots_note",
           "noteType": "comparison | context | critique | practical | general",
           "sourceBook": "Book title if applicable",
           "sourceAuthor": "Author name if applicable",
-          "text": "The Shortform research note content with external insights"
+          "text": "The Jonathan's Jots research note content with external insights"
         },
         {
           "type": "subsection",
@@ -138,7 +138,7 @@ Generate a JSON response with the following structure:
 **FORMATTING RULES**
 
 1. Book content = normal paragraphs
-2. Shortform additions = "Shortform note:" callouts
+2. Jonathan's Jots additions = "Jonathan's Jots note:" callouts
 3. Always cite specific books with italics notation: *Book Title*
 4. Always name the author when referencing their work
 5. Provide concrete, actionable details from other sources
@@ -147,7 +147,7 @@ Generate a JSON response with the following structure:
 
 **CRITICAL SUCCESS METRICS**
 
-- Every major concept should have 1-2 Shortform notes with external research
+- Every major concept should have 1-2 Jonathan's Jots notes with external research
 - Cite at least 5-10 different books/authors throughout the summary
 - Include at least 2-3 instances of comparative analysis
 - Add biographical context for 2-3 key figures mentioned
@@ -156,7 +156,7 @@ Generate a JSON response with the following structure:
 
 **QUALITY STANDARDS**
 
-Remember: Readers pay for Shortform because they get 10 books' worth of insights while reading 1 book summary. Every section should feel DENSE with cross-referenced wisdom.
+Remember: Readers pay for Jonathan's Jots because they get 10 books' worth of insights while reading 1 book summary. Every section should feel DENSE with cross-referenced wisdom.
 
 - Make it comprehensive but readable
 - Balance book content with external research
@@ -165,7 +165,7 @@ Remember: Readers pay for Shortform because they get 10 books' worth of insights
 - Create connections between different sources
 - Think critically, don't just summarize
 
-Now generate the complete Shortform-style summary following this structure and methodology.`;
+Now generate the complete Jonathan's Jots-style summary following this structure and methodology.`;
 }
 
 /**
@@ -183,7 +183,7 @@ export interface ParsedSummaryResponse {
     authorName?: string;
     description?: string;
   }>;
-  shortformNotesCount: number;
+  jotsNotesCount: number;
 }
 
 export function parseSummaryResponse(aiResponse: string): ParsedSummaryResponse {
@@ -191,12 +191,12 @@ export function parseSummaryResponse(aiResponse: string): ParsedSummaryResponse 
     // Try to parse as JSON first
     const parsed = JSON.parse(aiResponse);
     
-    // Count Shortform notes
-    let shortformNotesCount = 0;
+    // Count Jonathan's Jots notes
+    let jotsNotesCount = 0;
     if (parsed.sections && Array.isArray(parsed.sections)) {
       parsed.sections.forEach((section: any) => {
         if (section.content && Array.isArray(section.content)) {
-          shortformNotesCount += section.content.filter((item: any) => item.type === 'shortform_note').length;
+          jotsNotesCount += section.content.filter((item: any) => item.type === 'jots_note').length;
         }
       });
     }
@@ -208,7 +208,7 @@ export function parseSummaryResponse(aiResponse: string): ParsedSummaryResponse 
       introduction: parsed.introduction || '',
       mainContent: JSON.stringify(parsed.sections || []),
       researchSources: parsed.researchSources || [],
-      shortformNotesCount,
+      jotsNotesCount,
     };
   } catch (error) {
     // If parsing fails, return a basic structure
@@ -226,7 +226,7 @@ export function parseSummaryResponse(aiResponse: string): ParsedSummaryResponse 
         }]
       }]),
       researchSources: [],
-      shortformNotesCount: 0,
+      jotsNotesCount: 0,
     };
   }
 }

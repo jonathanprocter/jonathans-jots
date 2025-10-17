@@ -9,8 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { getLoginUrl } from '@/const';
 import { trpc } from '@/lib/trpc';
 import { DocumentUpload } from '@/components/DocumentUpload';
-import { ShortformLogo } from '@/components/ShortformLogo';
-import { ShortformSummaryRenderer } from '@/components/ShortformSummaryRenderer';
+import { JotsLogo } from '@/components/JotsLogo';
+import { JotsSummaryRenderer } from '@/components/JotsSummaryRenderer';
 import { FileText, Loader2, BookOpen, RefreshCw, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -96,13 +96,13 @@ export default function Home() {
       <div>
         <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
           <div className="container py-4 flex items-center justify-between">
-            <ShortformLogo />
+            <JotsLogo />
             <Button onClick={() => setViewingSummaryId(null)} variant="outline">
               ← Back to Dashboard
             </Button>
           </div>
         </div>
-        <ShortformSummaryRenderer
+        <JotsSummaryRenderer
           bookTitle={viewingSummary.bookTitle || 'Untitled'}
           bookAuthor={viewingSummary.bookAuthor || 'Unknown Author'}
           introduction={viewingSummary.introduction || ''}
@@ -117,9 +117,9 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <header className="border-b border-gray-200 bg-white">
         <div className="container py-4 flex items-center justify-between">
-          <ShortformLogo />
+          <JotsLogo />
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">Shortform Summary Generator</span>
+            <span className="text-sm text-gray-600">Jonathan's Jots</span>
           </div>
         </div>
       </header>
@@ -127,9 +127,9 @@ export default function Home() {
       <main className="flex-1 container py-8">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Shortform Summary Generator</h1>
+            <h1 className="text-3xl font-bold mb-2">Jonathan's Jots</h1>
             <p className="text-gray-600">
-              Upload documents and generate premium Shortform-style summaries with deep research
+              Upload documents and generate premium research-backed summaries with deep research
             </p>
           </div>
 

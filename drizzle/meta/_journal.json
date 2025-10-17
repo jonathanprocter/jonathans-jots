@@ -15,6 +15,13 @@
       "when": 1760736426702,
       "tag": "0001_furry_leopardon",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1760744265213,
+      "tag": "0002_complex_randall_flagg",
+      "breakpoints": true
     }
   ]
 }
