@@ -1,6 +1,17 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { 
+  InsertUser, 
+  users, 
+  documents, 
+  summaries, 
+  researchSources,
+  InsertDocument,
+  InsertSummary,
+  InsertResearchSource,
+  Document,
+  Summary
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -85,4 +96,127 @@ export async function getUser(id: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// ============= Document Management =============
+
+export async function createDocument(doc: InsertDocument): Promise<Document> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  await db.insert(documents).values(doc);
+  const result = await db.select().from(documents).where(eq(documents.id, doc.id!)).limit(1);
+  return result[0];
+}
+
+export async function getDocument(id: string): Promise<Document | undefined> {
+  const db = await getDb();
+  if (!db) {
+    return undefined;
+  }
+
+  const result = await db.select().from(documents).where(eq(documents.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserDocuments(userId: string): Promise<Document[]> {
+  const db = await getDb();
+  if (!db) {
+    return [];
+  }
+
+  return await db.select().from(documents).where(eq(documents.userId, userId));
+}
+
+export async function updateDocumentStatus(
+  id: string, 
+  status: "uploaded" | "processing" | "completed" | "failed",
+  extractedText?: string,
+  errorMessage?: string
+): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  const updateData: any = { status };
+  if (extractedText !== undefined) updateData.extractedText = extractedText;
+  if (errorMessage !== undefined) updateData.errorMessage = errorMessage;
+
+  await db.update(documents).set(updateData).where(eq(documents.id, id));
+}
+
+// ============= Summary Management =============
+
+export async function createSummary(summary: InsertSummary): Promise<Summary> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  await db.insert(summaries).values(summary);
+  const result = await db.select().from(summaries).where(eq(summaries.id, summary.id!)).limit(1);
+  return result[0];
+}
+
+export async function getSummary(id: string): Promise<Summary | undefined> {
+  const db = await getDb();
+  if (!db) {
+    return undefined;
+  }
+
+  const result = await db.select().from(summaries).where(eq(summaries.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getSummaryByDocumentId(documentId: string): Promise<Summary | undefined> {
+  const db = await getDb();
+  if (!db) {
+    return undefined;
+  }
+
+  const result = await db.select().from(summaries).where(eq(summaries.documentId, documentId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserSummaries(userId: string): Promise<Summary[]> {
+  const db = await getDb();
+  if (!db) {
+    return [];
+  }
+
+  return await db.select().from(summaries).where(eq(summaries.userId, userId));
+}
+
+export async function updateSummary(
+  id: string,
+  updates: Partial<Omit<Summary, 'id' | 'documentId' | 'userId' | 'createdAt' | 'updatedAt'>>
+): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  await db.update(summaries).set(updates).where(eq(summaries.id, id));
+}
+
+// ============= Research Sources Management =============
+
+export async function createResearchSource(source: InsertResearchSource): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  await db.insert(researchSources).values(source);
+}
+
+export async function getResearchSourcesBySummaryId(summaryId: string) {
+  const db = await getDb();
+  if (!db) {
+    return [];
+  }
+
+  return await db.select().from(researchSources).where(eq(researchSources.summaryId, summaryId));
+}
+
