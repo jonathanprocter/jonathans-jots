@@ -280,7 +280,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
+    model: "manus-1.5",
     messages: messages.map(normalizeMessage),
   };
 
