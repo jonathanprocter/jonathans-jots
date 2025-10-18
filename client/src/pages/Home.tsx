@@ -133,36 +133,38 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <header className="border-b-4 border-[#D4772E] bg-white shadow-sm">
-        <div className="container py-4 flex items-center justify-between">
+        <div className="container py-3 sm:py-4 flex items-center justify-between">
           <JotsLogo />
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">Jonathan's Jots</span>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">Jonathan's Jots</span>
           </div>
         </div>
       </header>
 
       <main className="flex-1 container py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Jonathan's Jots</h1>
-            <p className="text-gray-600">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">Jonathan's Jots</h1>
+            <p className="text-sm sm:text-base text-gray-600">
               Upload documents and generate premium research-backed summaries with deep research
             </p>
           </div>
 
           <Tabs defaultValue="upload" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="upload">Upload Document</TabsTrigger>
-              <TabsTrigger value="documents">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-2 h-auto p-2 bg-white border border-gray-200">
+              <TabsTrigger value="upload" className="py-3 px-4 text-sm sm:text-base">
+                Upload Document
+              </TabsTrigger>
+              <TabsTrigger value="documents" className="py-3 px-4 text-sm sm:text-base">
                 My Documents {documents && `(${documents.length})`}
               </TabsTrigger>
-              <TabsTrigger value="summaries">
+              <TabsTrigger value="summaries" className="py-3 px-4 text-sm sm:text-base">
                 My Summaries {summaries && `(${summaries.length})`}
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="upload" className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
+            <TabsContent value="upload" className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <DocumentUpload
                   onUploadSuccess={(docId) => {
                     setSelectedDocumentId(docId);

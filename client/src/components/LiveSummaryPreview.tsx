@@ -49,27 +49,29 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
     <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="border-b-4 border-[#D4772E] bg-white sticky top-0 z-10 shadow-sm">
-        <div className="container py-4 flex items-center justify-between">
+        <div className="container py-3 sm:py-4 px-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div className="flex items-center gap-4">
-            <Button onClick={onBack} variant="outline">
-              ← Back to Dashboard
+            <Button onClick={onBack} variant="outline" className="text-sm sm:text-base">
+              ← Back
             </Button>
             {isGenerating && (
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-[#2E4057]">
-                    {progress?.stage || 'Generating...'}
-                  </span>
-                  {progress?.currentSection && (
-                    <span className="text-xs text-gray-500">
-                      {progress.currentSection}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                <div className="flex-1">
+                  <div className="flex flex-col">
+                    <span className="text-xs sm:text-sm font-medium text-[#2E4057]">
+                      {progress?.stage || 'Generating...'}
                     </span>
-                  )}
+                    {progress?.currentSection && (
+                      <span className="text-xs text-gray-500">
+                        {progress.currentSection}
+                      </span>
+                    )}
+                  </div>
+                  <div className="w-full sm:w-48 mt-2">
+                    <Progress value={progressPercentage} className="h-2" />
+                  </div>
                 </div>
-                <div className="w-48">
-                  <Progress value={progressPercentage} className="h-2" />
-                </div>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 whitespace-nowrap">
                   {progress?.sectionsCompleted || 0} / {progress?.totalSections || 0}
                 </span>
               </div>
@@ -79,7 +81,7 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
       </div>
 
       {/* Content */}
-      <div className="container py-8">
+      <div className="container py-4 sm:py-8 px-4">
         {!summary || summary.status === 'generating' ? (
           <div>
             {progress?.partialContent ? (

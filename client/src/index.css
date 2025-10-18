@@ -231,3 +231,57 @@
   }
 }
 
+
+
+/* Mobile Responsive Styles */
+@media (max-width: 639px) {
+  .jots-note {
+    padding: 1rem;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+  }
+  
+  .jots-note-title {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .jots-bar {
+    margin: 1.5rem 0;
+  }
+  
+  .jots-paragraph {
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+  
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Tablet Responsive Styles */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .jots-note {
+    padding: 1.25rem;
+  }
+  
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+/* Touch-friendly button sizing */
+@media (hover: none) and (pointer: coarse) {
+  button, .button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  input, select, textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+

@@ -163,14 +163,14 @@ export function JotsSummaryRenderer({
   return (
     <div className="bg-white min-h-screen">
       {/* Content */}
-      <div className="container py-8 max-w-4xl">
+      <div className="container py-4 sm:py-8 max-w-4xl px-4">
         {/* Professional Cover Page */}
-        <div className="bg-gradient-to-br from-white to-[#F4E4D7] p-12 rounded-lg shadow-lg mb-12 min-h-[400px] flex flex-col justify-between">
+        <div className="bg-gradient-to-br from-white to-[#F4E4D7] p-6 sm:p-12 rounded-lg shadow-lg mb-8 sm:mb-12 min-h-[300px] sm:min-h-[400px] flex flex-col justify-between">
           <div className="flex-1 flex flex-col justify-center">
-            <h1 className="text-5xl font-bold text-[#2E4057] mb-4 leading-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#2E4057] mb-3 sm:mb-4 leading-tight">
               Summary of {bookTitle}
             </h1>
-            <h2 className="text-2xl text-gray-600 mb-8">
+            <h2 className="text-lg sm:text-xl lg:text-2xl text-gray-600 mb-6 sm:mb-8">
               Original book by {bookAuthor}
             </h2>
           </div>
@@ -186,9 +186,9 @@ export function JotsSummaryRenderer({
 
         {/* Introduction */}
         {introduction && (
-          <div className="mb-12">
-            <div className="prose prose-lg max-w-none">
-              <p className="text-lg leading-relaxed text-gray-700">{introduction}</p>
+          <div className="mb-8 sm:mb-12">
+            <div className="prose prose-base sm:prose-lg max-w-none">
+              <p className="text-base sm:text-lg leading-relaxed text-gray-700">{introduction}</p>
             </div>
           </div>
         )}
@@ -197,9 +197,9 @@ export function JotsSummaryRenderer({
         <div className="jots-bar"></div>
 
         {/* 1-Page Summary */}
-        <div className="mb-12">
-          <h2 className="text-3xl font-bold mb-6">1-Page Summary</h2>
-          <div className="prose prose-lg">
+        <div className="mb-8 sm:mb-12">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">1-Page Summary</h2>
+          <div className="prose prose-base sm:prose-lg">
             <p className="jots-paragraph">{onePageSummary}</p>
           </div>
         </div>
@@ -209,7 +209,7 @@ export function JotsSummaryRenderer({
 
         {/* Main Content Sections */}
         {sections.map((section, sectionIndex) => (
-          <div key={sectionIndex} className="mb-12">
+          <div key={sectionIndex} className="mb-8 sm:mb-12">
             <h2 className="jots-section-title">{section.title}</h2>
             <div>
               {section.content.map((item, itemIndex) =>
