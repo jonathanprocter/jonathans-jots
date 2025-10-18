@@ -11,6 +11,7 @@ import { trpc } from '@/lib/trpc';
 import { DocumentUpload } from '@/components/DocumentUpload';
 import { JotsLogo } from '@/components/JotsLogo';
 import { GeneratingLoader } from '@/components/GeneratingLoader';
+import { LiveSummaryPreview } from '@/components/LiveSummaryPreview';
 import { JotsSummaryRenderer } from '@/components/JotsSummaryRenderer';
 import { FileText, Loader2, BookOpen, RefreshCw, Eye } from 'lucide-react';
 import { toast } from 'sonner';
@@ -95,19 +96,14 @@ export default function Home() {
   if (viewingSummary) {
     if (viewingSummary.status === 'generating') {
       return (
-        <div>
-          <div className="border-b-4 border-[#D4772E] bg-white sticky top-0 z-10 shadow-sm">
-            <div className="container py-4 flex items-center justify-between">
-              <JotsLogo />
-              <Button onClick={() => setViewingSummaryId(null)} variant="outline">
-                ← Back to Dashboard
-              </Button>
-            </div>
-          </div>
-          <div className="container py-8">
-            <GeneratingLoader stage="Generating your premium summary..." />
-          </div>
-        </div>
+        <LiveSummaryPreview
+          summaryId={viewingSummary.id}
+          onComplete={() => {
+            // Refresh the summary data
+            utils.summaries.get.invalidate({ summaryId: viewingSummary.id });
+          }}
+          onBack={() => setViewingSummaryId(null)}
+        />
       );
     }
     

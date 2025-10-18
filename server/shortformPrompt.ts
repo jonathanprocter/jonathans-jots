@@ -92,8 +92,8 @@ Generate a JSON response with the following structure:
 {
   "bookTitle": "Extracted or provided book title",
   "bookAuthor": "Extracted or provided author name",
-  "onePageSummary": "2-4 paragraph condensed overview with key principles as bullet points",
-  "introduction": "2-3 paragraphs explaining the book's core premise and what readers will learn",
+  "onePageSummary": "A comprehensive 3-5 paragraph overview that captures the essence of the book. Include key principles, main arguments, and the book's unique contribution. This should be substantive and detailed, not just a teaser.",
+  "introduction": "3-5 paragraphs providing rich context: author background, why they wrote the book, the book's central thesis, its unique approach, and what makes it important. Set the stage for the detailed summary that follows.",
   "sections": [
     {
       "title": "Section title (e.g., 'Part 1: The Problem with Positive Thinking')",
@@ -103,7 +103,7 @@ Generate a JSON response with the following structure:
           "text": "Main content paragraph explaining the book's ideas"
         },
         {
-          "type": "jots_note",
+          "type": "shortform_note",
           "noteType": "comparison | context | critique | practical | general",
           "sourceBook": "Book title if applicable",
           "sourceAuthor": "Author name if applicable",
@@ -147,7 +147,11 @@ Generate a JSON response with the following structure:
 
 **CRITICAL SUCCESS METRICS**
 
+- Minimum 8-12 sections covering the book comprehensively
 - Every major concept should have 1-2 Jonathan's Jots notes with external research
+- At least 15-20 Jonathan's Jots notes total throughout the summary
+- Minimum 8-10 research sources cited
+- Rich, detailed content - aim for depth over brevity
 - Cite at least 5-10 different books/authors throughout the summary
 - Include at least 2-3 instances of comparative analysis
 - Add biographical context for 2-3 key figures mentioned

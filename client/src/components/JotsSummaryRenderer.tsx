@@ -107,12 +107,16 @@ export function JotsSummaryRenderer({
   };
 
   const renderTextWithFormatting = (text: string) => {
+    if (!text) return null;
+    
     // Convert **bold** to <strong>
     text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Convert *italic* to <em>
-    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    // Convert *italic* to <em> (but not if already in **)
+    text = text.replace(/(?<!\*)\*([^*]+?)\*(?!\*)/g, '<em>$1</em>');
     // Convert _italic_ to <em>
     text = text.replace(/_(.*?)_/g, '<em>$1</em>');
+    // Convert line breaks
+    text = text.replace(/\n/g, '<br />');
 
     return <span dangerouslySetInnerHTML={{ __html: text }} />;
   };
@@ -153,13 +157,6 @@ export function JotsSummaryRenderer({
 
   return (
     <div className="bg-white min-h-screen">
-      {/* Header */}
-      <div className="border-b border-[#D4772E] bg-white sticky top-0 z-10 shadow-sm">
-        <div className="container py-4">
-          <JotsLogo variant="horizontal" size="md" />
-        </div>
-      </div>
-
       {/* Content */}
       <div className="container py-8 max-w-4xl">
         {/* Professional Cover Page */}
@@ -177,7 +174,7 @@ export function JotsSummaryRenderer({
           <div className="flex justify-end items-end">
             <div className="text-right">
               <JotsLogo variant="full" size="lg" />
-              <p className="text-sm text-gray-500 mt-2">52°</p>
+
             </div>
           </div>
         </div>

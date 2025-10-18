@@ -21,6 +21,7 @@ import { processDocument, getFileType, validateFileSize } from "./documentProces
 import { generateJotsPrompt, parseSummaryResponse } from "./shortformPrompt";
 import { invokeLLM } from "./_core/llm";
 import { nanoid } from "nanoid";
+import { generateSummaryWithProgress, getProgress } from "./progressiveSummary";
 
 export const appRouter = router({
   system: systemRouter,
@@ -172,8 +173,8 @@ export const appRouter = router({
           status: 'generating',
         });
 
-        // Generate summary asynchronously
-        generateSummaryAsync(summaryId, document.extractedText, bookTitle, bookAuthor).catch(error => {
+        // Generate summary with progress tracking
+        generateSummaryWithProgress(documentId, summaryId, bookTitle, bookAuthor).catch(error => {
           console.error('Summary generation failed:', error);
           updateSummary(summaryId, {
             status: 'failed',
@@ -243,6 +244,20 @@ export const appRouter = router({
         return {
           ...summary,
           researchSources,
+        };
+      }),
+
+    // Get generation progress
+    progress: publicProcedure
+      .input(z.object({
+        summaryId: z.string(),
+      }))
+      .query(async ({ input }) => {
+        const progress = getProgress(input.summaryId);
+        return progress || {
+          stage: 'Initializing...',
+          sectionsCompleted: 0,
+          totalSections: 0,
         };
       }),
   }),
