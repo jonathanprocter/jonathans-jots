@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, bookTitle, status, jotsNotesCount, createdAt FROM summaries ORDER BY createdAt DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2PprtSQ4Zk9Y5ny.e342af2807ba --database PJJy5nzXkTX8cZFE5Kytsz --execute SELECT id, bookTitle, status, jotsNotesCount, createdAt FROM summaries ORDER BY createdAt DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "Zwrz1kxyCEgK0KFYug0by",
+      "bookTitle": "50 Cognitive Biases to be Aware Of",
+      "status": "failed",
+      "jotsNotesCount": "0",
+      "createdAt": "2025-10-18 16:59:45"
+    },
+    {
+      "id": "ZlGIQB5m3Vi2ZnkutnUSx",
+      "bookTitle": "Leadership Styles",
+      "status": "completed",
+      "jotsNotesCount": "13",
+      "createdAt": "2025-10-18 14:57:41"
+    },
+    {
+      "id": "gwONJNqLn215mwLUAd2BM",
+      "bookTitle": "The Four Agreements",
+      "status": "completed",
+      "jotsNotesCount": "16",
+      "createdAt": "2025-10-18 03:13:12"
+    },
+    {
+      "id": "NzjBtwnceq9wl928uxZ29",
+      "bookTitle": "The Four Agreements Workbook",
+      "status": "completed",
+      "jotsNotesCount": "20",
+      "createdAt": "2025-10-18 01:13:40"
+    },
+    {
+      "id": "UxKQogAjkyUtSCn5xA5QX",
+      "bookTitle": "Avoiding the Four Horsemen",
+      "status": "completed",
+      "jotsNotesCount": "10",
+      "createdAt": "2025-10-18 00:07:21"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tbookTitle\tstatus\tjotsNotesCount\tcreatedAt\nZwrz1kxyCEgK0KFYug0by\t50 Cognitive Biases to be Aware Of\tfailed\t0\t2025-10-18 16:59:45\nZlGIQB5m3Vi2ZnkutnUSx\tLeadership Styles\tcompleted\t13\t2025-10-18 14:57:41\ngwONJNqLn215mwLUAd2BM\tThe Four Agreements\tcompleted\t16\t2025-10-18 03:13:12\nNzjBtwnceq9wl928uxZ29\tThe Four Agreements Workbook\tcompleted\t20\t2025-10-18 01:13:40\nUxKQogAjkyUtSCn5xA5QX\tAvoiding the Four Horsemen\tcompleted\t10\t2025-10-18 00:07:21\n",
+  "stderr": "",
+  "execution_time_ms": 161
+}

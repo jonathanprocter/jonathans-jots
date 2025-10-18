@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, originalFilename, status, LENGTH(extractedText) as textLength FROM documents WHERE originalFilename LIKE '%50Cognitive%' LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2PprtSQ4Zk9Y5ny.e342af2807ba --database PJJy5nzXkTX8cZFE5Kytsz --execute SELECT id, originalFilename, status, LENGTH(extractedText) as textLength FROM documents WHERE originalFilename LIKE '%50Cognitive%' LIMIT 1;",
+  "rows": [
+    {
+      "id": "FdBJAAbatoy9KnVR6cvSs",
+      "originalFilename": "50CognitiveBiases.pdf",
+      "status": "completed",
+      "textLength": "310"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\toriginalFilename\tstatus\ttextLength\nFdBJAAbatoy9KnVR6cvSs\t50CognitiveBiases.pdf\tcompleted\t310\n",
+  "stderr": "",
+  "execution_time_ms": 131
+}
