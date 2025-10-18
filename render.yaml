@@ -10,6 +10,12 @@ services:
         value: production
       - key: DATABASE_URL
         sync: false
+      - key: VITE_APP_TITLE
+        value: Jonathan's Jots
+      - key: VITE_OAUTH_PORTAL_URL
+        value: https://jonathans-jots.onrender.com
+      - key: VITE_APP_ID
+        value: jonathans-jots
 databases:
   - name: jonathans-jots-db
     plan: free
