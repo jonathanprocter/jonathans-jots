@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { JotsSummaryRenderer } from './JotsSummaryRenderer';
+import JotsSummaryRenderer from "./JotsSummaryRenderer";
 import { GeneratingLoader } from './GeneratingLoader';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
@@ -88,11 +88,17 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
               // Show partial content as it's being generated
               <div>
                 <JotsSummaryRenderer
-                  bookTitle={progress.partialContent.bookTitle || 'Generating...'}
-                  bookAuthor={progress.partialContent.bookAuthor || 'Generating...'}
-                  introduction={progress.partialContent.introduction || ''}
-                  onePageSummary={progress.partialContent.onePageSummary || ''}
-                  mainContent={JSON.stringify(progress.partialContent.sections || [])}
+                  summary={{
+                    ...summary,
+                    bookTitle: progress.partialContent.bookTitle || 'Generating...',
+                    bookAuthor: progress.partialContent.bookAuthor || 'Generating...',
+                    introduction: progress.partialContent.introduction || '',
+                    onePageSummary: progress.partialContent.onePageSummary || '',
+                    mainContent: JSON.stringify({
+                      sections: progress.partialContent.sections || [],
+                      researchSources: progress.partialContent.researchSources || []
+                    })
+                  }}
                 />
                 {/* Live generation indicator */}
                 <div className="mt-12 mb-8">
@@ -113,13 +119,7 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
             )}
           </div>
         ) : summary.status === 'completed' ? (
-          <JotsSummaryRenderer
-            bookTitle={summary.bookTitle || 'Untitled'}
-            bookAuthor={summary.bookAuthor || 'Unknown Author'}
-            introduction={summary.introduction || ''}
-            onePageSummary={summary.onePageSummary || ''}
-            mainContent={summary.mainContent || '[]'}
-          />
+          <JotsSummaryRenderer summary={summary} />
         ) : (
           <div className="text-center py-16">
             <p className="text-red-600 mb-4">Summary generation failed</p>

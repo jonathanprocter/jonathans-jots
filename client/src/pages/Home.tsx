@@ -12,7 +12,7 @@ import { DocumentUpload } from '@/components/DocumentUpload';
 import { JotsLogo } from '@/components/JotsLogo';
 import { GeneratingLoader } from '@/components/GeneratingLoader';
 import { LiveSummaryPreview } from '@/components/LiveSummaryPreview';
-import { JotsSummaryRenderer } from '@/components/JotsSummaryRenderer';
+import JotsSummaryRenderer from "@/components/JotsSummaryRenderer";
 import { FileText, Loader2, BookOpen, RefreshCw, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -118,13 +118,7 @@ export default function Home() {
             </Button>
           </div>
         </div>
-        <JotsSummaryRenderer
-          bookTitle={viewingSummary.bookTitle || 'Untitled'}
-          bookAuthor={viewingSummary.bookAuthor || 'Unknown Author'}
-          introduction={viewingSummary.introduction || ''}
-          onePageSummary={viewingSummary.onePageSummary || ''}
-          mainContent={viewingSummary.mainContent || '[]'}
-        />
+        <JotsSummaryRenderer summary={viewingSummary} />
       </div>
     );
     }
