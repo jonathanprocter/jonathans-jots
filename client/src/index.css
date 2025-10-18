@@ -190,6 +190,12 @@
   border-radius: 8px;
 }
 
+/* Animations */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
 /* Container customization */
 .container {
   @apply mx-auto px-4 sm:px-6 lg:px-8;

@@ -154,25 +154,45 @@ export function JotsSummaryRenderer({
   return (
     <div className="bg-white min-h-screen">
       {/* Header */}
-      <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
+      <div className="border-b border-[#D4772E] bg-white sticky top-0 z-10 shadow-sm">
         <div className="container py-4">
-          <JotsLogo />
+          <JotsLogo variant="horizontal" size="md" />
         </div>
       </div>
 
       {/* Content */}
       <div className="container py-8 max-w-4xl">
-        {/* Title Page */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-4">Summary of {bookTitle}</h1>
-          <h2 className="text-2xl text-gray-700 mb-6">Original book by {bookAuthor}</h2>
-          <div className="prose prose-lg">
-            <p>{introduction}</p>
+        {/* Professional Cover Page */}
+        <div className="bg-gradient-to-br from-white to-[#F4E4D7] p-12 rounded-lg shadow-lg mb-12 min-h-[400px] flex flex-col justify-between">
+          <div className="flex-1 flex flex-col justify-center">
+            <h1 className="text-5xl font-bold text-[#2E4057] mb-4 leading-tight">
+              Summary of {bookTitle}
+            </h1>
+            <h2 className="text-2xl text-gray-600 mb-8">
+              Original book by {bookAuthor}
+            </h2>
+          </div>
+          
+          {/* Logo in bottom right corner */}
+          <div className="flex justify-end items-end">
+            <div className="text-right">
+              <JotsLogo variant="full" size="lg" />
+              <p className="text-sm text-gray-500 mt-2">52°</p>
+            </div>
           </div>
         </div>
 
-        {/* Yellow Bar */}
-        <div className="jots-yellow-bar"></div>
+        {/* Introduction */}
+        {introduction && (
+          <div className="mb-12">
+            <div className="prose prose-lg max-w-none">
+              <p className="text-lg leading-relaxed text-gray-700">{introduction}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Cognac Bar */}
+        <div className="jots-bar"></div>
 
         {/* 1-Page Summary */}
         <div className="mb-12">
@@ -182,8 +202,8 @@ export function JotsSummaryRenderer({
           </div>
         </div>
 
-        {/* Yellow Bar */}
-        <div className="jots-yellow-bar"></div>
+        {/* Cognac Bar */}
+        <div className="jots-bar"></div>
 
         {/* Main Content Sections */}
         {sections.map((section, sectionIndex) => (
@@ -195,7 +215,7 @@ export function JotsSummaryRenderer({
               )}
             </div>
             {sectionIndex < sections.length - 1 && (
-              <div className="jots-yellow-bar"></div>
+              <div className="jots-bar"></div>
             )}
           </div>
         ))}

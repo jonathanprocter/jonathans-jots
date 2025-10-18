@@ -10,6 +10,7 @@ import { getLoginUrl } from '@/const';
 import { trpc } from '@/lib/trpc';
 import { DocumentUpload } from '@/components/DocumentUpload';
 import { JotsLogo } from '@/components/JotsLogo';
+import { GeneratingLoader } from '@/components/GeneratingLoader';
 import { JotsSummaryRenderer } from '@/components/JotsSummaryRenderer';
 import { FileText, Loader2, BookOpen, RefreshCw, Eye } from 'lucide-react';
 import { toast } from 'sonner';
@@ -90,11 +91,30 @@ export default function Home() {
     );
   }
 
-  // If viewing a summary, show the full summary renderer
-  if (viewingSummary && viewingSummary.status === 'completed') {
+  // If viewing a summary, show appropriate view
+  if (viewingSummary) {
+    if (viewingSummary.status === 'generating') {
+      return (
+        <div>
+          <div className="border-b-4 border-[#D4772E] bg-white sticky top-0 z-10 shadow-sm">
+            <div className="container py-4 flex items-center justify-between">
+              <JotsLogo />
+              <Button onClick={() => setViewingSummaryId(null)} variant="outline">
+                ← Back to Dashboard
+              </Button>
+            </div>
+          </div>
+          <div className="container py-8">
+            <GeneratingLoader stage="Generating your premium summary..." />
+          </div>
+        </div>
+      );
+    }
+    
+    if (viewingSummary.status === 'completed') {
     return (
       <div>
-        <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
+        <div className="border-b-4 border-[#D4772E] bg-white sticky top-0 z-10 shadow-sm">
           <div className="container py-4 flex items-center justify-between">
             <JotsLogo />
             <Button onClick={() => setViewingSummaryId(null)} variant="outline">
@@ -111,11 +131,12 @@ export default function Home() {
         />
       </div>
     );
+    }
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <header className="border-b border-gray-200 bg-white">
+      <header className="border-b-4 border-[#D4772E] bg-white shadow-sm">
         <div className="container py-4 flex items-center justify-between">
           <JotsLogo />
           <div className="flex items-center gap-4">
@@ -285,7 +306,7 @@ export default function Home() {
               <Card>
                 <CardHeader>
                   <CardTitle>Generated Summaries</CardTitle>
-                  <CardDescription>View your Shortform-style summaries</CardDescription>
+                  <CardDescription>View your Jonathan's Jots-style summaries</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {summariesLoading ? (
@@ -304,7 +325,7 @@ export default function Home() {
                           className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                         >
                           <div className="flex items-center gap-3">
-                            <BookOpen className="h-5 w-5 text-yellow-600" />
+                            <BookOpen className="h-5 w-5 text-[#D4772E]" />
                             <div>
                               <p className="font-medium">
                                 {summary.bookTitle || 'Untitled Summary'}
@@ -317,6 +338,16 @@ export default function Home() {
                           </div>
                           <div className="flex items-center gap-2">
                             {getStatusBadge(summary.status)}
+                            {summary.status === 'generating' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled
+                              >
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Generating...
+                              </Button>
+                            )}
                             {summary.status === 'completed' && (
                               <Button
                                 size="sm"
