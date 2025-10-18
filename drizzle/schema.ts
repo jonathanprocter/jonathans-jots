@@ -1,4 +1,4 @@
-import { mysqlEnum, mysqlTable, text, timestamp, varchar, int, boolean } from "drizzle-orm/mysql-core";
+import { mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, int } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -27,7 +27,7 @@ export const documents = mysqlTable("documents", {
   fileSize: int("fileSize").notNull(), // in bytes
   storageKey: varchar("storageKey", { length: 512 }).notNull(), // S3 key
   storageUrl: varchar("storageUrl", { length: 1024 }).notNull(), // S3 URL
-  extractedText: text("extractedText"), // extracted raw text
+  extractedText: longtext("extractedText"), // extracted raw text (supports up to 4GB)
   status: mysqlEnum("status", ["uploaded", "processing", "completed", "failed"]).default("uploaded").notNull(),
   errorMessage: text("errorMessage"),
   createdAt: timestamp("createdAt").defaultNow(),

@@ -194,7 +194,11 @@ export const appRouter = router({
       .query(async ({ ctx }) => {
         const userId = ctx.user?.id || 'anonymous';
         const summaries = await getUserSummaries(userId);
-        return summaries;
+        // Parse mainContent JSON for each summary
+        return summaries.map(summary => ({
+          ...summary,
+          mainContent: summary.mainContent ? JSON.parse(summary.mainContent) : null,
+        }));
       }),
 
     // Get a specific summary with research sources
@@ -218,6 +222,7 @@ export const appRouter = router({
 
         return {
           ...summary,
+          mainContent: summary.mainContent ? JSON.parse(summary.mainContent) : null,
           researchSources,
         };
       }),
@@ -243,6 +248,7 @@ export const appRouter = router({
 
         return {
           ...summary,
+          mainContent: summary.mainContent ? JSON.parse(summary.mainContent) : null,
           researchSources,
         };
       }),
