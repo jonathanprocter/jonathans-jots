@@ -12,164 +12,130 @@ export interface JotsPromptConfig {
 export function generateJotsPrompt(config: JotsPromptConfig): string {
   const { extractedText, bookTitle, bookAuthor } = config;
 
-  return `You are creating a premium Jonathan's Jots-style book summary. Jonathan's Jots summaries are NOT just book summaries - they are ENHANCED with external research, comparative analysis, and additional expert perspectives.
+  return `You are creating a premium Jonathan's Jots-style book summary that EXACTLY matches the Shortform methodology.
 
-**CRITICAL: YOUR CORE MISSION**
+**CRITICAL UNDERSTANDING: What Makes Shortform Different**
 
-For every major concept in the book, you MUST:
-1. Find 2-3 related perspectives from OTHER books/authors
-2. Add historical, biographical, or scientific context
-3. Provide comparative analysis (agreements AND contradictions)
-4. Include practical implementation from other sources
-5. Cite specific books, authors, and their credentials
+Shortform summaries are NOT just book summaries. They are RESEARCH REPORTS that:
+1. Summarize the original book's content
+2. Add 5-10 EXTERNAL book citations with comparative analysis
+3. Include inline research notes: "(Shortform note: ...)" throughout the text
+4. Provide expert credentials and biographical context
+5. Offer critical analysis and alternative perspectives
+6. Give practical implementations from other sources
+
+**INLINE CITATION FORMAT (MANDATORY)**
+
+Every 2-3 paragraphs MUST include an inline research note in this EXACT format:
+
+"(Shortform note: [Author Name], [credentials], [agrees/contradicts/expands] in *[Book Title]* by [explanation]. [Author] suggests [specific advice/perspective].)"
+
+Example from real Shortform:
+"(Shortform note: Gary Chapman's *The 5 Love Languages* offers a complementary perspective on building appreciation. Chapman, a marriage counselor, identifies five primary ways people give and receive love: Words of Affirmation, Quality Time, Receiving Gifts, Acts of Service, and Physical Touch.)"
 
 **SOURCE DOCUMENT**
 ${bookTitle ? `Book Title: ${bookTitle}\n` : ''}${bookAuthor ? `Author: ${bookAuthor}\n` : ''}
 Text to summarize:
 ${extractedText.substring(0, 15000)} ${extractedText.length > 15000 ? '...[truncated for processing]' : ''}
 
-**RESEARCH CATEGORIES TO INCLUDE**
+**MANDATORY RESEARCH SOURCES (Must cite 8-12 books)**
 
-### Category 1: Comparative Book Analysis
-When the book discusses concept X, find:
-- Other authors who support this idea (with specific book titles)
-- Other authors who contradict this idea
-- How different traditions approach the same concept
-
-Example template:
-"Jonathan's Jots note: In *[Book Title]*, [Author Name] [agrees/contradicts/expands on] this idea by [specific explanation]. [Author] suggests [specific actionable advice]."
-
-### Category 2: Expert Credentials & Context
-When mentioning a person/expert:
-- Who are they? (credentials, background)
-- Why does their perspective matter?
-- What's their most relevant work?
-
-Example template:
-"(Jonathan's Jots note: [Person Name], [credentials/background], is known for [achievement]. Their work in [area] provides important context because [reason].)"
-
-### Category 3: Philosophical/Scientific Foundations
-When the book makes a claim, explain:
-- The underlying philosophy (Buddhism, Stoicism, etc.)
-- The scientific research backing it
-- Historical origins of the concept
-
-Example template:
-"Jonathan's Jots note: [Philosophy/Science] makes the distinction between [concept]. This is supported by [scientific research/historical tradition]. [Another expert] says [additional perspective]."
-
-### Category 4: Critical Analysis
-Don't just agree with the book - think critically:
-- Where might this advice NOT apply?
-- What are the limitations?
-- How do other experts challenge this?
-
-Example template:
-"Jonathan's Jots note: Although [Author] recommends [X], some experts caution that [limitation]. In *[Book Title]*, [Author] argues [counterpoint]."
-
-### Category 5: Practical Applications from Other Sources
-When book gives abstract advice, add concrete steps from other sources:
-
-Example template:
-"In *[Book Title]*, [Author] offers practical strategies for implementing this:
-● [Specific action step with explanation]
-● [Another action step]
-● [Third action step]"
-
-**SOURCES YOU SHOULD REFERENCE**
-
-Draw from these categories (use specific books and authors):
-- Psychology: Tara Brach, Daniel Goleman, Carol Dweck, Tony Robbins
-- Philosophy: Stoics (Marcus Aurelius, Epictetus), Buddhist teachers, Eckhart Tolle
-- Self-help: James Clear, Ryan Holiday, Cal Newport, Greg McKeown, Mark Manson
-- Spirituality: Deepak Chopra, Gary Zukav, Pema Chödrön, Jay Shetty
-- Business: Clayton Christensen, Patrick Lencioni, Jim Collins
-- Productivity: David Allen, Stephen Covey, Charles Duhigg
+For EVERY major concept, add inline notes citing these types of sources:
+- **Psychology**: Daniel Goleman (*Emotional Intelligence*), Carol Dweck (*Mindset*), Tara Brach (*Radical Acceptance*)
+- **Philosophy**: Marcus Aurelius (*Meditations*), Eckhart Tolle (*The Power of Now*), Pema Chödrön (*When Things Fall Apart*)
+- **Self-improvement**: James Clear (*Atomic Habits*), Mark Manson (*The Subtle Art*), Ryan Holiday (*The Obstacle Is the Way*)
+- **Productivity**: David Allen (*Getting Things Done*), Cal Newport (*Deep Work*), Greg McKeown (*Essentialism*)
+- **Relationships**: John Gottman (*The Seven Principles*), Gary Chapman (*The 5 Love Languages*)
+- **Business**: Patrick Lencioni, Jim Collins, Clayton Christensen
+- **Spirituality**: Jay Shetty, Deepak Chopra, Gary Zukav
 
 **OUTPUT STRUCTURE**
 
-Generate a JSON response with the following structure:
+Generate a JSON response with this EXACT structure:
 
 {
   "bookTitle": "Extracted or provided book title",
   "bookAuthor": "Extracted or provided author name",
-  "onePageSummary": "A comprehensive 3-5 paragraph overview that captures the essence of the book. Include key principles, main arguments, and the book's unique contribution. This should be substantive and detailed, not just a teaser.",
-  "introduction": "3-5 paragraphs providing rich context: author background, why they wrote the book, the book's central thesis, its unique approach, and what makes it important. Set the stage for the detailed summary that follows.",
+  "onePageSummary": "3-5 paragraph comprehensive overview with key principles and unique contributions. Include inline Shortform notes here too.",
+  "introduction": "3-5 paragraphs with author background, book context, central thesis. Include at least 1-2 inline Shortform notes about the author or related works.",
   "sections": [
     {
-      "title": "Section title (e.g., 'Part 1: The Problem with Positive Thinking')",
+      "title": "Chapter/Section Title",
       "content": [
         {
           "type": "paragraph",
-          "text": "Main content paragraph explaining the book's ideas"
+          "text": "Main content paragraph explaining the book's ideas. (Shortform note: Add inline research citation here with specific book title, author credentials, and how it relates.)"
         },
         {
-          "type": "shortform_note",
-          "noteType": "comparison | context | critique | practical | general",
-          "sourceBook": "Book title if applicable",
-          "sourceAuthor": "Author name if applicable",
-          "text": "The Jonathan's Jots research note content with external insights"
+          "type": "paragraph",
+          "text": "Another paragraph with more book content and analysis. (Shortform note: Another inline citation from a different source, offering comparative perspective or practical application.)"
         },
         {
           "type": "subsection",
-          "title": "Subsection title",
-          "content": "Subsection content"
-        },
-        {
-          "type": "example",
-          "text": "Concrete example illustrating the concept"
+          "title": "Subsection Title",
+          "content": "Subsection content with inline notes. (Shortform note: Expert perspective from another book.)"
         },
         {
           "type": "list",
-          "items": ["Bullet point 1", "Bullet point 2", "Bullet point 3"]
+          "items": [
+            "**Key Point 1**: Explanation",
+            "**Key Point 2**: Explanation",
+            "**Key Point 3**: Explanation"
+          ]
         }
       ]
     }
   ],
   "researchSources": [
     {
-      "sourceType": "book | study | expert | philosophy",
+      "sourceType": "book",
       "bookTitle": "Referenced book title",
-      "authorName": "Author name",
-      "description": "Brief description of how this source was used"
+      "authorName": "Author name with credentials",
+      "description": "How this source was used in the summary (e.g., 'Provided comparative perspective on meditation practices')"
     }
   ]
 }
 
-**FORMATTING RULES**
+**CRITICAL FORMATTING RULES**
 
-1. Book content = normal paragraphs
-2. Jonathan's Jots additions = "Jonathan's Jots note:" callouts
-3. Always cite specific books with italics notation: *Book Title*
-4. Always name the author when referencing their work
-5. Provide concrete, actionable details from other sources
-6. Use bold for emphasis on key concepts: **bold text**
-7. Include hyperlink-style references: [concept] or [book title]
+1. **Inline notes ONLY** - Do NOT create separate callout boxes
+2. **Format**: "(Shortform note: ...)" - must start with this exact phrase
+3. **Cite specific books**: Use italics notation *Book Title*
+4. **Name authors with credentials**: "Daniel Goleman, a science journalist and psychologist"
+5. **Bold key concepts**: **important term**
+6. **Every 2-3 paragraphs** must have an inline Shortform note
+7. **Minimum 15-20 inline notes** throughout the entire summary
+8. **8-12 different books cited** in research sources
 
-**CRITICAL SUCCESS METRICS**
+**CONTENT REQUIREMENTS**
 
-- Minimum 8-12 sections covering the book comprehensively
-- Every major concept should have 1-2 Jonathan's Jots notes with external research
-- At least 15-20 Jonathan's Jots notes total throughout the summary
-- Minimum 8-10 research sources cited
-- Rich, detailed content - aim for depth over brevity
-- Cite at least 5-10 different books/authors throughout the summary
-- Include at least 2-3 instances of comparative analysis
-- Add biographical context for 2-3 key figures mentioned
-- Provide at least 3 actionable strategy lists from other sources
-- Challenge or expand on the book's ideas at least 2-3 times
+- 8-12 comprehensive sections covering the book
+- Each section has 3-5 paragraphs minimum
+- Every major concept gets comparative analysis from other books
+- Include author credentials when first mentioning them
+- Add historical/philosophical context where relevant
+- Provide critical analysis (not just agreement)
+- Include practical implementations from other sources
+- Make connections between different sources
 
-**QUALITY STANDARDS**
+**EXAMPLE OF PERFECT INLINE NOTE**
 
-Remember: Readers pay for Jonathan's Jots because they get 10 books' worth of insights while reading 1 book summary. Every section should feel DENSE with cross-referenced wisdom.
+"The antidote to stonewalling is to take a self-soothing break for at least 20 minutes and then re-engage when calmer. (Shortform note: Tara Brach, a clinical psychologist and meditation teacher, offers powerful tools for self-soothing in *Radical Acceptance*. Her RAIN meditation practice—Recognize, Allow, Investigate, Nurture—can be adapted for self-soothing breaks, helping individuals process intense emotions and facilitating a calmer return to dialogue.)"
 
-- Make it comprehensive but readable
-- Balance book content with external research
-- Provide specific citations, not vague references
-- Add genuine value through research, not just filler
-- Create connections between different sources
-- Think critically, don't just summarize
+**QUALITY CHECKLIST**
 
-Now generate the complete Jonathan's Jots-style summary following this structure and methodology.`;
+Before submitting, verify:
+✓ 15-20 inline "(Shortform note: ...)" citations throughout
+✓ 8-12 different books cited in researchSources
+✓ Author credentials provided for each expert
+✓ Comparative analysis (agreements AND contradictions)
+✓ Practical applications from other sources
+✓ Critical thinking (not just summarizing)
+✓ Rich, dense content with cross-referenced wisdom
+✓ Specific book titles in italics: *Book Title*
+✓ Bold formatting for key concepts: **concept**
+
+Now generate the complete Jonathan's Jots-style summary with inline research notes throughout.`;
 }
 
 /**
@@ -195,18 +161,41 @@ export function parseSummaryResponse(aiResponse: string): ParsedSummaryResponse 
     // Try to parse as JSON first
     const parsed = JSON.parse(aiResponse);
     
-    // Count Jonathan's Jots notes
+    // Count Shortform notes by searching for "(Shortform note:" in all text content
     let jotsNotesCount = 0;
+    const countNotesInText = (text: string) => {
+      const matches = text.match(/\(Shortform note:/gi);
+      return matches ? matches.length : 0;
+    };
+    
+    // Count in onePageSummary
+    if (parsed.onePageSummary) {
+      jotsNotesCount += countNotesInText(parsed.onePageSummary);
+    }
+    
+    // Count in introduction
+    if (parsed.introduction) {
+      jotsNotesCount += countNotesInText(parsed.introduction);
+    }
+    
+    // Count in sections
     if (parsed.sections && Array.isArray(parsed.sections)) {
       parsed.sections.forEach((section: any) => {
         if (section.content && Array.isArray(section.content)) {
-          jotsNotesCount += section.content.filter((item: any) => item.type === 'jots_note').length;
+          section.content.forEach((item: any) => {
+            if (item.type === 'paragraph' && item.text) {
+              jotsNotesCount += countNotesInText(item.text);
+            }
+            if (item.type === 'subsection' && item.content) {
+              jotsNotesCount += countNotesInText(item.content);
+            }
+          });
         }
       });
     }
-
+    
     return {
-      bookTitle: parsed.bookTitle || 'Untitled',
+      bookTitle: parsed.bookTitle || 'Unknown Title',
       bookAuthor: parsed.bookAuthor || 'Unknown Author',
       onePageSummary: parsed.onePageSummary || '',
       introduction: parsed.introduction || '',
@@ -215,23 +204,8 @@ export function parseSummaryResponse(aiResponse: string): ParsedSummaryResponse 
       jotsNotesCount,
     };
   } catch (error) {
-    // If parsing fails, return a basic structure
     console.error('Failed to parse AI response:', error);
-    return {
-      bookTitle: 'Untitled',
-      bookAuthor: 'Unknown Author',
-      onePageSummary: aiResponse.substring(0, 500),
-      introduction: aiResponse.substring(0, 500),
-      mainContent: JSON.stringify([{
-        title: 'Summary',
-        content: [{
-          type: 'paragraph',
-          text: aiResponse
-        }]
-      }]),
-      researchSources: [],
-      jotsNotesCount: 0,
-    };
+    throw new Error('Invalid AI response format');
   }
 }
 
