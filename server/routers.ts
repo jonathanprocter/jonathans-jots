@@ -21,6 +21,23 @@ import { processDocument, getFileType, validateFileSize } from "./documentProces
 import { generateShortformPrompt,  } from "./shortformPrompt";
 import { invokeLLM } from "./_core/llm";
 import { nanoid } from "nanoid";
+
+// Helper to count total jots notes across all sections
+function countJotsNotes(parsed: any): number {
+  let count = 0;
+  if (parsed.sections) {
+    for (const section of parsed.sections) {
+      if (section.subsections) {
+        for (const subsection of section.subsections) {
+          if (subsection.jotsNotes) {
+            count += subsection.jotsNotes.length;
+          }
+        }
+      }
+    }
+  }
+  return count;
+}
 import { generateSummaryWithProgress, getProgress } from "./progressiveSummary";
 
 export const appRouter = router({
@@ -317,11 +334,7 @@ async function generateSummaryAsync(
 ): Promise<void> {
   try {
     // Generate the prompt
-    const prompt = generateShortformPrompt({
-      extractedText,
-      bookTitle,
-      bookAuthor,
-    });
+    const prompt = generateShortformPrompt(extractedText, bookTitle, bookAuthor);
 
     // Call LLM to generate summary
     const response = await invokeLLM({
@@ -344,7 +357,7 @@ async function generateSummaryAsync(
     const aiResponseText = typeof messageContent === 'string' ? messageContent : '';
     
     // Parse the response
-    const parsed = (aiResponseText);
+    const parsed = JSON.parse(aiResponseText);
 
     // Update summary with generated content
     await updateSummary(summaryId, {
@@ -352,9 +365,9 @@ async function generateSummaryAsync(
       bookAuthor: parsed.bookAuthor,
       onePageSummary: parsed.onePageSummary,
       introduction: parsed.introduction,
-      mainContent: parsed.mainContent,
-      researchSourcesCount: parsed.researchSources.length,
-      jotsNotesCount: parsed.jotsNotesCount,
+      mainContent: JSON.stringify(parsed),
+      researchSourcesCount: (parsed.researchSources || []).length,
+      jotsNotesCount: countJotsNotes(parsed),
       status: 'completed',
     });
 

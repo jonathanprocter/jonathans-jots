@@ -49,11 +49,7 @@ export async function generateSummaryWithProgress(
     });
 
     // Generate prompt
-    const prompt = generateShortformPrompt({
-      extractedText: doc.extractedText,
-      bookTitle: bookTitle || undefined,
-      bookAuthor: bookAuthor || undefined,
-    });
+    const prompt = generateShortformPrompt(doc.extractedText, bookTitle || undefined, bookAuthor || undefined);
 
     progressStore.set(summaryId, {
       stage: 'AI is generating comprehensive summary with research...',
