@@ -72,12 +72,12 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
     );
   };
 
-  // Helper to render Shortform notes (inline, blue text)
-  const renderShortformNote = (note: any) => {
+  // Helper to render Jonathan's Jots notes (inline, blue text)
+  const renderJotsNote = (note: any) => {
     return (
       <p className="mb-4 leading-relaxed">
         <span className="text-blue-600">
-          (Shortform note: {renderFormattedText(note.content)}
+          (Jonathan's Jots note: {renderFormattedText(note.content)}
           {note.sources && note.sources.length > 0 && (
             <span>
               {" "}According to{" "}
@@ -117,7 +117,7 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
         </ul>
       );
     } else if (item.type === "shortform_note") {
-      return <div key={index}>{renderShortformNote(item)}</div>;
+      return <div key={index}>{renderJotsNote(item)}</div>;
     } else if (item.type === "subsection") {
       return (
         <div key={index} className="mb-8">

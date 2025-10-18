@@ -1,26 +1,18 @@
-import { processDocument } from './server/documentProcessor.ts';
-import { readFileSync } from 'fs';
+import { processDocument } from "./server/documentProcessor.ts";
+import fs from "fs";
 
-async function test() {
-  try {
-    console.log('Testing document processor...');
-    
-    // Test with a simple text file first
-    const testText = 'This is a test document about happiness and well-being.';
-    const buffer = Buffer.from(testText, 'utf-8');
-    
-    const result = await processDocument(buffer, 'txt');
-    
-    console.log('Success:', result.success);
-    console.log('Word count:', result.wordCount);
-    console.log('Text:', result.text);
-    
-    if (result.error) {
-      console.error('Error:', result.error);
-    }
-  } catch (error) {
-    console.error('Test failed:', error.message);
-  }
-}
+// Test with test_book.txt
+const txtBuffer = fs.readFileSync("/home/ubuntu/test_book.txt");
+console.log("Testing TXT processing...");
+const txtResult = await processDocument(txtBuffer, "txt");
+console.log("TXT Success:", txtResult.success);
+console.log("TXT Text length:", txtResult.text?.length);
+console.log("TXT Text preview:", txtResult.text?.substring(0, 200));
 
-test();
+// Test with RTF
+const rtfBuffer = fs.readFileSync("/home/ubuntu/upload/HelpfulInformation.rtf");
+console.log("\nTesting RTF processing...");
+const rtfResult = await processDocument(rtfBuffer, "rtf");
+console.log("RTF Success:", rtfResult.success);
+console.log("RTF Text length:", rtfResult.text?.length);
+console.log("RTF Text preview:", rtfResult.text?.substring(0, 200));
