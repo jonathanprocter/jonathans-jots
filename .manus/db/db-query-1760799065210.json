@@ -1,0 +1,59 @@
+{
+  "query": "SELECT id, originalFilename, fileType, LENGTH(extractedText) as textLength, status FROM documents",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2PprtSQ4Zk9Y5ny.e342af2807ba --database PJJy5nzXkTX8cZFE5Kytsz --execute SELECT id, originalFilename, fileType, LENGTH(extractedText) as textLength, status FROM documents",
+  "rows": [
+    {
+      "id": "CUt3jaP3MIrnIl_NRhWe5",
+      "originalFilename": "Psych Experiments - From Pavlov’s Dogs to Rorschach’s Inkblots, Put Psychology’s Most Fascinating Studies to the Test.pdf",
+      "fileType": "pdf",
+      "textLength": "NULL",
+      "status": "completed"
+    },
+    {
+      "id": "DLFqo-jtSXSlfjvVRkhFF",
+      "originalFilename": "Chapter #1.pdf",
+      "fileType": "pdf",
+      "textLength": "NULL",
+      "status": "completed"
+    },
+    {
+      "id": "He3Y-Q5gOqSjvMo_4uaoJ",
+      "originalFilename": "leadership styles.pdf",
+      "fileType": "pdf",
+      "textLength": "NULL",
+      "status": "completed"
+    },
+    {
+      "id": "mpnNPmQ7vf48S69H8BZFL",
+      "originalFilename": "Avoid the Four Horsemen.pdf",
+      "fileType": "pdf",
+      "textLength": "11543",
+      "status": "completed"
+    },
+    {
+      "id": "p1ObAL7r6x3c4Rh4lcmMi",
+      "originalFilename": "test_book.txt",
+      "fileType": "txt",
+      "textLength": "1057",
+      "status": "completed"
+    },
+    {
+      "id": "RV5XDHSDRKfifuNPU_4gF",
+      "originalFilename": "HelpfulInformation.rtf",
+      "fileType": "rtf",
+      "textLength": "NULL",
+      "status": "completed"
+    },
+    {
+      "id": "ZkL0qD4-pK0UZeqphAy1Q",
+      "originalFilename": "704468103-The-Four-Agreements-WORKBOOK.txt",
+      "fileType": "txt",
+      "textLength": "36048",
+      "status": "completed"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\toriginalFilename\tfileType\ttextLength\tstatus\nCUt3jaP3MIrnIl_NRhWe5\tPsych Experiments - From Pavlov’s Dogs to Rorschach’s Inkblots, Put Psychology’s Most Fascinating Studies to the Test.pdf\tpdf\tNULL\tcompleted\nDLFqo-jtSXSlfjvVRkhFF\tChapter #1.pdf\tpdf\tNULL\tcompleted\nHe3Y-Q5gOqSjvMo_4uaoJ\tleadership styles.pdf\tpdf\tNULL\tcompleted\nmpnNPmQ7vf48S69H8BZFL\tAvoid the Four Horsemen.pdf\tpdf\t11543\tcompleted\np1ObAL7r6x3c4Rh4lcmMi\ttest_book.txt\ttxt\t1057\tcompleted\nRV5XDHSDRKfifuNPU_4gF\tHelpfulInformation.rtf\trtf\tNULL\tcompleted\nZkL0qD4-pK0UZeqphAy1Q\t704468103-The-Four-Agreements-WORKBOOK.txt\ttxt\t36048\tcompleted\n",
+  "stderr": "",
+  "execution_time_ms": 46
+}

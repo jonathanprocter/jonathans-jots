@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE documents SET status = 'completed' WHERE status = 'processing' OR status = 'uploaded'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2PprtSQ4Zk9Y5ny.e342af2807ba --database PJJy5nzXkTX8cZFE5Kytsz --execute UPDATE documents SET status = 'completed' WHERE status = 'processing' OR status = 'uploaded'",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 108
+}
