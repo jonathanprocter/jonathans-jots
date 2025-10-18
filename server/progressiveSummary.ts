@@ -1,5 +1,5 @@
 import { invokeLLM } from './_core/llm';
-import { generateJotsPrompt } from './shortformPrompt';
+import { generateShortformPrompt } from './shortformPrompt';
 import { getDb } from './db';
 import { documents, summaries } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -49,7 +49,7 @@ export async function generateSummaryWithProgress(
     });
 
     // Generate prompt
-    const prompt = generateJotsPrompt({
+    const prompt = generateShortformPrompt({
       extractedText: doc.extractedText,
       bookTitle: bookTitle || undefined,
       bookAuthor: bookAuthor || undefined,
