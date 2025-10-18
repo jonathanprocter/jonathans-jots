@@ -84,7 +84,7 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
           <div>
             {progress?.partialContent ? (
               // Show partial content as it's being generated
-              <div className="opacity-90">
+              <div>
                 <JotsSummaryRenderer
                   bookTitle={progress.partialContent.bookTitle || 'Generating...'}
                   bookAuthor={progress.partialContent.bookAuthor || 'Generating...'}
@@ -92,12 +92,17 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
                   onePageSummary={progress.partialContent.onePageSummary || ''}
                   mainContent={JSON.stringify(progress.partialContent.sections || [])}
                 />
-                <div className="mt-8 text-center">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#D4772E]/10 rounded-full">
-                    <div className="animate-spin h-4 w-4 border-2 border-[#D4772E] border-t-transparent rounded-full"></div>
-                    <span className="text-sm text-[#2E4057]">
-                      Generating more content...
-                    </span>
+                {/* Live generation indicator */}
+                <div className="mt-12 mb-8">
+                  <div className="jots-bar animate-pulse"></div>
+                  <div className="text-center mt-8">
+                    <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-[#2E4057] to-[#D4772E] text-white rounded-lg shadow-lg">
+                      <div className="animate-spin h-5 w-5 border-3 border-white border-t-transparent rounded-full"></div>
+                      <div className="text-left">
+                        <div className="font-semibold">Researching and writing...</div>
+                        <div className="text-xs opacity-90">Adding Jots Notes with external sources</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

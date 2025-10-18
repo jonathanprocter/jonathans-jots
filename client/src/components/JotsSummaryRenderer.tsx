@@ -2,7 +2,7 @@ import { JotsLogo } from './JotsLogo';
 
 interface JotsNote {
   type: 'shortform_note';
-  noteType: 'comparison' | 'context' | 'critique' | 'practical' | 'general';
+  noteType: 'comparison' | 'context' | 'critique' | 'practical' | 'expert' | 'general';
   sourceBook?: string;
   sourceAuthor?: string;
   text: string;
@@ -56,10 +56,11 @@ export function JotsSummaryRenderer({
         );
 
       case 'shortform_note':
+        const noteTypeClass = item.noteType && item.noteType !== 'general' ? item.noteType : '';
         return (
           <div
             key={index}
-            className="jots-note"
+            className={`jots-note ${noteTypeClass}`}
             data-research-type={item.noteType || 'general'}
           >
             <div className="jots-note-title">
@@ -131,6 +132,8 @@ export function JotsSummaryRenderer({
         return '🤔';
       case 'practical':
         return '🎯';
+      case 'expert':
+        return '👤';
       default:
         return '💡';
     }
@@ -150,6 +153,8 @@ export function JotsSummaryRenderer({
         return 'Critical Analysis';
       case 'practical':
         return 'Practical Application';
+      case 'expert':
+        return 'Expert Perspective';
       default:
         return 'Jots Note';
     }
