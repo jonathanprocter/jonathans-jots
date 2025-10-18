@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: jonathans-jots
+    runtime: node
+    plan: free
+    buildCommand: pnpm install && pnpm run build
+    startCommand: pnpm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+databases:
+  - name: jonathans-jots-db
+    plan: free
+
