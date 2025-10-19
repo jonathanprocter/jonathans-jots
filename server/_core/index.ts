@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { initializeDatabase } from "../initDb";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -111,6 +112,14 @@ async function startServer() {
     await setupVite(app, server);
   } else {
     serveStatic(app);
+  }
+
+  // Initialize database tables
+  try {
+    await initializeDatabase();
+  } catch (error) {
+    console.error("Failed to initialize database:", error);
+    process.exit(1);
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");
