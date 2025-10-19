@@ -1,11 +1,4 @@
-import { pgEnum, pgTable, text, timestamp, varchar, integer } from "drizzle-orm/pg-core";
-
-// Define enums for PostgreSQL
-export const roleEnum = pgEnum("role", ["user", "admin"]);
-export const fileTypeEnum = pgEnum("fileType", ["pdf", "docx", "txt", "rtf"]);
-export const documentStatusEnum = pgEnum("documentStatus", ["uploaded", "processing", "completed", "failed"]);
-export const summaryStatusEnum = pgEnum("summaryStatus", ["generating", "completed", "failed"]);
-export const sourceTypeEnum = pgEnum("sourceType", ["book", "study", "expert", "philosophy"]);
+import { pgTable, text, timestamp, varchar, integer } from "drizzle-orm/pg-core";
 
 /**
  * Core user table backing auth flow.
@@ -15,7 +8,7 @@ export const users = pgTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: roleEnum("role").default("user").notNull(),
+  role: varchar("role", { length: 20 }).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow(),
 });
@@ -30,12 +23,12 @@ export const documents = pgTable("documents", {
   id: varchar("id", { length: 64 }).primaryKey(),
   userId: varchar("userId", { length: 64 }).notNull(),
   originalFilename: varchar("originalFilename", { length: 255 }).notNull(),
-  fileType: fileTypeEnum("fileType").notNull(),
+  fileType: varchar("fileType", { length: 10 }).notNull(), // pdf, docx, txt, rtf
   fileSize: integer("fileSize").notNull(), // in bytes
-  storageKey: varchar("storageKey", { length: 512 }).notNull(), // S3 key
-  storageUrl: varchar("storageUrl", { length: 1024 }).notNull(), // S3 URL
+  storageKey: varchar("storageKey", { length: 512 }).notNull(),
+  storageUrl: varchar("storageUrl", { length: 1024 }).notNull(),
   extractedText: text("extractedText"), // extracted raw text
-  status: documentStatusEnum("status").default("uploaded").notNull(),
+  status: varchar("status", { length: 20 }).default("uploaded").notNull(), // uploaded, processing, completed, failed
   errorMessage: text("errorMessage"),
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow(),
@@ -62,7 +55,7 @@ export const summaries = pgTable("summaries", {
   mainContent: text("mainContent"), // JSON structure with sections and Jots notes
   
   // Processing metadata
-  status: summaryStatusEnum("status").default("generating").notNull(),
+  status: varchar("status", { length: 20 }).default("generating").notNull(), // generating, completed, failed
   errorMessage: text("errorMessage"),
   
   // AI generation metadata
@@ -83,7 +76,7 @@ export const researchSources = pgTable("researchSources", {
   id: varchar("id", { length: 64 }).primaryKey(),
   summaryId: varchar("summaryId", { length: 64 }).notNull(),
   
-  sourceType: sourceTypeEnum("sourceType").notNull(),
+  sourceType: varchar("sourceType", { length: 20 }).notNull(), // book, study, expert, philosophy
   bookTitle: varchar("bookTitle", { length: 255 }),
   authorName: varchar("authorName", { length: 255 }),
   description: text("description"),
