@@ -11,7 +11,7 @@ services:
       - key: DATABASE_URL
         fromDatabase:
           name: jonathans-jots-db
-          property: connectionString
+          property: internalConnectionString
       - key: VITE_APP_TITLE
         value: Jonathan's Jots
       - key: VITE_OAUTH_PORTAL_URL
