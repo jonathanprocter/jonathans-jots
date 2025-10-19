@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
-import mysql from "mysql2/promise";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import { 
   InsertUser, 
   users, 
@@ -19,18 +19,17 @@ export type { Document, Summary };
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
-let _pool: mysql.Pool | null = null;
+let _pool: Pool | null = null;
 
 /**
  * Get database connection pool configuration
  */
 function getPoolConfig() {
   return {
-    connectionLimit: parseInt(process.env.DATABASE_POOL_SIZE || "10", 10),
-    connectTimeout: parseInt(process.env.DATABASE_TIMEOUT || "30000", 10),
-    queueLimit: 0,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0,
+    max: parseInt(process.env.DATABASE_POOL_SIZE || "10", 10),
+    connectionTimeoutMillis: parseInt(process.env.DATABASE_TIMEOUT || "30000", 10),
+    idleTimeoutMillis: 30000,
+    allowExitOnIdle: false,
   };
 }
 
@@ -39,8 +38,8 @@ export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
       if (!_pool) {
-        _pool = mysql.createPool({
-          uri: process.env.DATABASE_URL,
+        _pool = new Pool({
+          connectionString: process.env.DATABASE_URL,
           ...getPoolConfig(),
         });
       }
@@ -111,7 +110,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    // PostgreSQL uses onConflictDoUpdate instead of onDuplicateKeyUpdate
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: users.id,
       set: updateSet,
     });
   } catch (error) {
