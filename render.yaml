@@ -9,7 +9,9 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: jonathans-jots-db
+          property: connectionString
       - key: VITE_APP_TITLE
         value: Jonathan's Jots
       - key: VITE_OAUTH_PORTAL_URL
