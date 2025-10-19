@@ -74,20 +74,30 @@ export async function generateSummaryWithProgress(
     // Parse JSON
     const jsonMatch = contentText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error('Failed to parse AI response');
+      throw new Error('Failed to parse AI response: No JSON found in response');
     }
 
-    const summaryData = JSON.parse(jsonMatch[0]);
+    let summaryData;
+    try {
+      summaryData = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      throw new Error(`Failed to parse AI response JSON: ${parseError instanceof Error ? parseError.message : 'Invalid JSON'}`);
+    }
+
+    // Validate required fields
+    if (!summaryData.sections || !Array.isArray(summaryData.sections)) {
+      throw new Error('Invalid AI response: missing or invalid sections array');
+    }
 
     // Update progress as we process sections
-    const totalSections = summaryData.sections?.length || 0;
+    const totalSections = summaryData.sections.length;
     
     for (let i = 0; i < totalSections; i++) {
       progressStore.set(summaryId, {
         stage: 'Processing sections...',
         sectionsCompleted: i + 1,
         totalSections,
-        currentSection: summaryData.sections[i]?.title,
+        currentSection: summaryData.sections[i]?.title || `Section ${i + 1}`,
         partialContent: {
           bookTitle: summaryData.bookTitle,
           bookAuthor: summaryData.bookAuthor,
@@ -96,9 +106,6 @@ export async function generateSummaryWithProgress(
           sections: summaryData.sections.slice(0, i + 1),
         },
       });
-      
-      // Small delay to allow UI to update
-      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     // Save to database

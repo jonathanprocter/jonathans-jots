@@ -14,7 +14,9 @@ import {
   getUserSummaries,
   updateSummary,
   createResearchSource,
-  getResearchSourcesBySummaryId
+  getResearchSourcesBySummaryId,
+  Document,
+  Summary
 } from "./db";
 import { storagePut } from "./storage";
 import { processDocument, getFileType, validateFileSize } from "./documentProcessor";
@@ -125,15 +127,9 @@ export const appRouter = router({
       }))
       .query(async ({ ctx, input }) => {
         const document = await getDocument(input.documentId);
-        
-        if (!document) {
-          throw new Error('Document not found');
-        }
-
         const userId = ctx.user?.id || 'anonymous';
-        if (document.userId !== userId) {
-          throw new Error('Unauthorized access to document');
-        }
+        
+        verifyDocumentAccess(document, userId);
 
         return document;
       }),
@@ -214,7 +210,7 @@ export const appRouter = router({
         // Parse mainContent JSON for each summary
         return summaries.map(summary => ({
           ...summary,
-          mainContent: summary.mainContent ? JSON.parse(summary.mainContent) : null,
+          mainContent: parseSummaryContent(summary.mainContent),
         }));
       }),
 
@@ -225,21 +221,15 @@ export const appRouter = router({
       }))
       .query(async ({ ctx, input }) => {
         const summary = await getSummary(input.summaryId);
-        
-        if (!summary) {
-          throw new Error('Summary not found');
-        }
-
         const userId = ctx.user?.id || 'anonymous';
-        if (summary.userId !== userId) {
-          throw new Error('Unauthorized access to summary');
-        }
-
+        
+        verifySummaryAccess(summary, userId);
+        
         const researchSources = await getResearchSourcesBySummaryId(input.summaryId);
 
         return {
-          ...summary,
-          mainContent: summary.mainContent ? JSON.parse(summary.mainContent) : null,
+          ...summary!,
+          mainContent: parseSummaryContent(summary!.mainContent),
           researchSources,
         };
       }),
@@ -252,9 +242,8 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         const userId = ctx.user?.id || 'anonymous';
         const document = await getDocument(input.documentId);
-        if (!document || document.userId !== userId) {
-          throw new Error('Document not found or unauthorized');
-        }
+        
+        verifyDocumentAccess(document, userId);
 
         const summary = await getSummaryByDocumentId(input.documentId);
         if (!summary) {
@@ -265,7 +254,7 @@ export const appRouter = router({
 
         return {
           ...summary,
-          mainContent: summary.mainContent ? JSON.parse(summary.mainContent) : null,
+          mainContent: parseSummaryContent(summary.mainContent),
           researchSources,
         };
       }),
@@ -284,27 +273,82 @@ export const appRouter = router({
         };
       }),
   }),
+
+  // Storage endpoint for serving uploaded files
+  storage: router({
+    get: publicProcedure
+      .input(z.object({
+        key: z.string(),
+      }))
+      .query(async ({ input }) => {
+        const { storageGetFile } = await import('./storage');
+        const buffer = await storageGetFile(input.key);
+        // Return base64 encoded data
+        return {
+          data: buffer.toString('base64'),
+          contentType: getMimeType(input.key.split('.').pop() || ''),
+        };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
 
 // ============= Helper Functions =============
 
+/**
+ * Get MIME type for supported file types
+ */
 function getMimeType(fileType: string): string {
-  switch (fileType) {
-    case 'pdf':
-      return 'application/pdf';
-    case 'docx':
-      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    case 'txt':
-      return 'text/plain';
-    case 'rtf':
-      return 'application/rtf';
-    default:
-      return 'application/octet-stream';
+  const mimeTypes: Record<string, string> = {
+    'pdf': 'application/pdf',
+    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'txt': 'text/plain',
+    'rtf': 'application/rtf',
+  };
+  return mimeTypes[fileType] || 'application/octet-stream';
+}
+
+/**
+ * Safely parse JSON content from summary with error handling
+ */
+function parseSummaryContent(content: string | null): any {
+  if (!content) return null;
+  try {
+    return JSON.parse(content);
+  } catch (error) {
+    console.error('Failed to parse summary content:', error);
+    return null;
   }
 }
 
+/**
+ * Verify user authorization for document access
+ */
+function verifyDocumentAccess(document: Document | undefined, userId: string): void {
+  if (!document) {
+    throw new Error('Document not found');
+  }
+  if (document.userId !== userId) {
+    throw new Error('Unauthorized access to document');
+  }
+}
+
+/**
+ * Verify user authorization for summary access
+ */
+function verifySummaryAccess(summary: Summary | undefined, userId: string): void {
+  if (!summary) {
+    throw new Error('Summary not found');
+  }
+  if (summary.userId !== userId) {
+    throw new Error('Unauthorized access to summary');
+  }
+}
+
+/**
+ * Process document asynchronously after upload
+ */
 async function processDocumentAsync(
   documentId: string,
   buffer: Buffer,
@@ -321,69 +365,8 @@ async function processDocumentAsync(
 
     await updateDocumentStatus(documentId, 'completed', result.text);
   } catch (error) {
-    console.error('Error processing document:', error);
-    throw error;
-  }
-}
-
-async function generateSummaryAsync(
-  summaryId: string,
-  extractedText: string,
-  bookTitle?: string,
-  bookAuthor?: string
-): Promise<void> {
-  try {
-    // Generate the prompt
-    const prompt = generateShortformPrompt(extractedText, bookTitle, bookAuthor);
-
-    // Call LLM to generate summary
-    const response = await invokeLLM({
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert at creating premium Shortform-style book summaries with deep research and external citations.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      response_format: {
-        type: 'json_object',
-      },
-    });
-
-    const messageContent = response.choices[0]?.message?.content;
-    const aiResponseText = typeof messageContent === 'string' ? messageContent : '';
-    
-    // Parse the response
-    const parsed = JSON.parse(aiResponseText);
-
-    // Update summary with generated content
-    await updateSummary(summaryId, {
-      bookTitle: parsed.bookTitle,
-      bookAuthor: parsed.bookAuthor,
-      onePageSummary: parsed.onePageSummary,
-      introduction: parsed.introduction,
-      mainContent: JSON.stringify(parsed),
-      researchSourcesCount: (parsed.researchSources || []).length,
-      jotsNotesCount: countJotsNotes(parsed),
-      status: 'completed',
-    });
-
-    // Save research sources
-    for (const source of parsed.researchSources) {
-      await createResearchSource({
-        id: nanoid(),
-        summaryId,
-        sourceType: source.sourceType,
-        bookTitle: source.bookTitle || null,
-        authorName: source.authorName || null,
-        description: source.description || null,
-      });
-    }
-  } catch (error) {
-    console.error('Error generating summary:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error processing document:', errorMessage);
     throw error;
   }
 }

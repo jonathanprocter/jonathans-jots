@@ -1,105 +1,153 @@
-// Preconfigured storage helpers for Manus WebDev templates
-// Uses the Biz-provided storage proxy (Authorization: Bearer <token>)
+// Local filesystem storage implementation for Jonathan's Jots
+// Stores files directly on the server filesystem
 
+import { promises as fs } from 'fs';
+import path from 'path';
 import { ENV } from './_core/env';
 
 type StorageConfig = { baseUrl: string; apiKey: string };
 
-function getStorageConfig(): StorageConfig {
-  const baseUrl = ENV.forgeApiUrl;
-  const apiKey = ENV.forgeApiKey;
+// Storage directory
+const STORAGE_DIR = path.join(process.cwd(), 'uploads');
 
-  if (!baseUrl || !apiKey) {
-    throw new Error(
-      "Storage proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
-    );
+// Simple in-memory cache for download URLs
+const urlCache = new Map<string, { url: string; expiry: number }>();
+
+/**
+ * Sleep for specified milliseconds
+ */
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Retry with exponential backoff
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = parseInt(process.env.STORAGE_RETRY_ATTEMPTS || "3", 10),
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error | undefined;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      // Don't retry on final attempt
+      if (attempt === maxRetries) {
+        break;
+      }
+      
+      // Exponential backoff
+      const delay = baseDelay * Math.pow(2, attempt);
+      console.warn(`Storage operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms...`);
+      await sleep(delay);
+    }
   }
-
-  return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
+  
+  throw lastError;
 }
 
-function buildUploadUrl(baseUrl: string, relKey: string): URL {
-  const url = new URL("v1/storage/upload", ensureTrailingSlash(baseUrl));
-  url.searchParams.set("path", normalizeKey(relKey));
-  return url;
-}
-
-async function buildDownloadUrl(
-  baseUrl: string,
-  relKey: string,
-  apiKey: string
-): Promise<string> {
-  const downloadApiUrl = new URL(
-    "v1/storage/downloadUrl",
-    ensureTrailingSlash(baseUrl)
-  );
-  downloadApiUrl.searchParams.set("path", normalizeKey(relKey));
-  const response = await fetch(downloadApiUrl, {
-    method: "GET",
-    headers: buildAuthHeaders(apiKey),
-  });
-  return (await response.json()).url;
-}
-
-function ensureTrailingSlash(value: string): string {
-  return value.endsWith("/") ? value : `${value}/`;
+/**
+ * Ensure storage directory exists
+ */
+async function ensureStorageDir(): Promise<void> {
+  try {
+    await fs.access(STORAGE_DIR);
+  } catch {
+    await fs.mkdir(STORAGE_DIR, { recursive: true });
+  }
 }
 
 function normalizeKey(relKey: string): string {
   return relKey.replace(/^\/+/, "");
 }
 
-function toFormData(
-  data: Buffer | Uint8Array | string,
-  contentType: string,
-  fileName: string
-): FormData {
-  const blob =
-    typeof data === "string"
-      ? new Blob([data], { type: contentType })
-      : new Blob([data as any], { type: contentType });
-  const form = new FormData();
-  form.append("file", blob, fileName || "file");
-  return form;
-}
-
-function buildAuthHeaders(apiKey: string): HeadersInit {
-  return { Authorization: `Bearer ${apiKey}` };
-}
-
+/**
+ * Store data to local filesystem
+ */
 export async function storagePut(
   relKey: string,
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
-  const { baseUrl, apiKey } = getStorageConfig();
-  const key = normalizeKey(relKey);
-  const uploadUrl = buildUploadUrl(baseUrl, key);
-  const formData = toFormData(data, contentType, key.split("/").pop() ?? key);
-  const response = await fetch(uploadUrl, {
-    method: "POST",
-    headers: buildAuthHeaders(apiKey),
-    body: formData,
+  return withRetry(async () => {
+    await ensureStorageDir();
+    
+    const key = normalizeKey(relKey);
+    const filePath = path.join(STORAGE_DIR, key);
+    
+    // Ensure directory exists for nested keys
+    const dir = path.dirname(filePath);
+    await fs.mkdir(dir, { recursive: true });
+    
+    // Write file
+    const buffer = typeof data === 'string' ? Buffer.from(data) : Buffer.from(data);
+    await fs.writeFile(filePath, buffer);
+    
+    // Generate URL (relative to server)
+    const url = `/api/storage/${key}`;
+    
+    console.log(`[Storage] Saved file: ${key} (${buffer.length} bytes)`);
+    
+    return { key, url };
   });
+}
 
-  if (!response.ok) {
-    const message = await response.text().catch(() => response.statusText);
-    throw new Error(
-      `Storage upload failed (${response.status} ${response.statusText}): ${message}`
-    );
+/**
+ * Get download URL for stored file
+ */
+export async function storageGet(
+  relKey: string,
+  expiresIn = 300
+): Promise<{ key: string; url: string; }> {
+  const key = normalizeKey(relKey);
+  
+  // Check cache
+  const cached = urlCache.get(key);
+  if (cached && cached.expiry > Date.now()) {
+    return { key, url: cached.url };
   }
-  const url = (await response.json()).url;
+  
+  // Verify file exists
+  const filePath = path.join(STORAGE_DIR, key);
+  try {
+    await fs.access(filePath);
+  } catch {
+    throw new Error(`File not found: ${key}`);
+  }
+  
+  // Generate URL
+  const url = `/api/storage/${key}`;
+  
+  // Cache the URL
+  urlCache.set(key, {
+    url,
+    expiry: Date.now() + (expiresIn * 1000 * 0.9),
+  });
+  
   return { key, url };
 }
 
-export async function storageGet(
-  relKey: string,
-  _expiresIn = 300
-): Promise<{ key: string; url: string; }> {
-  const { baseUrl, apiKey } = getStorageConfig();
+/**
+ * Get file from storage (for serving)
+ */
+export async function storageGetFile(relKey: string): Promise<Buffer> {
   const key = normalizeKey(relKey);
-  return {
-    key,
-    url: await buildDownloadUrl(baseUrl, key, apiKey),
-  };
+  const filePath = path.join(STORAGE_DIR, key);
+  
+  try {
+    return await fs.readFile(filePath);
+  } catch (error) {
+    throw new Error(`File not found: ${key}`);
+  }
 }
+
+// Legacy compatibility - these functions are not needed for local storage
+// but kept for compatibility with existing code
+function getStorageConfig(): StorageConfig {
+  // Return dummy config - not used in local storage mode
+  return { baseUrl: '', apiKey: '' };
+}
+

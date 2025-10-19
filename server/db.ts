@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
 import { 
   InsertUser, 
   users, 
@@ -12,21 +13,56 @@ import {
   Document,
   Summary
 } from "../drizzle/schema";
+
+// Re-export types for use in other modules
+export type { Document, Summary };
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: mysql.Pool | null = null;
+
+/**
+ * Get database connection pool configuration
+ */
+function getPoolConfig() {
+  return {
+    connectionLimit: parseInt(process.env.DATABASE_POOL_SIZE || "10", 10),
+    connectTimeout: parseInt(process.env.DATABASE_TIMEOUT || "30000", 10),
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
+  };
+}
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      if (!_pool) {
+        _pool = mysql.createPool({
+          uri: process.env.DATABASE_URL,
+          ...getPoolConfig(),
+        });
+      }
+      _db = drizzle(_pool);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
+      _pool = null;
     }
   }
   return _db;
+}
+
+/**
+ * Close database connection pool (useful for graceful shutdown)
+ */
+export async function closeDb() {
+  if (_pool) {
+    await _pool.end();
+    _pool = null;
+    _db = null;
+  }
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {

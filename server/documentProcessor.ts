@@ -111,13 +111,10 @@ export async function processDocument(
         throw new Error(`Unsupported file type: ${fileType}`);
     }
 
-    // Clean up the text
-    text = text
-      .replace(/\r\n/g, '\n') // Normalize line endings
-      .replace(/\n{3,}/g, '\n\n') // Remove excessive line breaks
-      .trim();
+    // Clean up the text more efficiently
+    text = cleanText(text);
 
-    const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
+    const wordCount = countWords(text);
 
     return {
       text,
@@ -132,6 +129,47 @@ export async function processDocument(
       error: error instanceof Error ? error.message : 'Unknown error occurred',
     };
   }
+}
+
+/**
+ * Clean text efficiently
+ */
+function cleanText(text: string): string {
+  return text
+    .replace(/\r\n/g, '\n')        // Normalize line endings
+    .replace(/\n{3,}/g, '\n\n')    // Remove excessive line breaks
+    .replace(/[ \t]+/g, ' ')       // Normalize spaces and tabs
+    .trim();
+}
+
+/**
+ * Count words efficiently
+ */
+function countWords(text: string): number {
+  if (!text || text.length === 0) return 0;
+  
+  // More efficient word counting without creating array
+  let count = 0;
+  let inWord = false;
+  
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const isWhitespace = char === ' ' || char === '\n' || char === '\t' || char === '\r';
+    
+    if (isWhitespace) {
+      if (inWord) {
+        count++;
+        inWord = false;
+      }
+    } else {
+      inWord = true;
+    }
+  }
+  
+  // Count the last word if we ended in one
+  if (inWord) count++;
+  
+  return count;
 }
 
 /**

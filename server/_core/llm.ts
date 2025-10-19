@@ -220,6 +220,52 @@ const assertApiKey = () => {
   }
 };
 
+/**
+ * Sleep for specified milliseconds
+ */
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Retry with exponential backoff
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error | undefined;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      // Don't retry on final attempt
+      if (attempt === maxRetries) {
+        break;
+      }
+      
+      // Check if error is retryable (e.g., network errors, rate limits)
+      const isRetryable = lastError.message.includes('rate limit') || 
+                         lastError.message.includes('timeout') ||
+                         lastError.message.includes('503') ||
+                         lastError.message.includes('502');
+      
+      if (!isRetryable) {
+        throw lastError;
+      }
+      
+      // Exponential backoff
+      const delay = baseDelay * Math.pow(2, attempt);
+      console.warn(`LLM request failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms...`);
+      await sleep(delay);
+    }
+  }
+  
+  throw lastError;
+}
+
 const normalizeResponseFormat = ({
   responseFormat,
   response_format,
@@ -279,54 +325,70 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     response_format,
   } = params;
 
-  const payload: Record<string, unknown> = {
-    model: "manus-1.5",
-    messages: messages.map(normalizeMessage),
-  };
+  return withRetry(async () => {
+    const payload: Record<string, unknown> = {
+      model: process.env.OPENAI_MODEL || "manus-1.5",
+      messages: messages.map(normalizeMessage),
+    };
 
-  if (tools && tools.length > 0) {
-    payload.tools = tools;
-  }
+    if (tools && tools.length > 0) {
+      payload.tools = tools;
+    }
 
-  const normalizedToolChoice = normalizeToolChoice(
-    toolChoice || tool_choice,
-    tools
-  );
-  if (normalizedToolChoice) {
-    payload.tool_choice = normalizedToolChoice;
-  }
-
-  payload.max_tokens = 32768
-  payload.thinking = {
-    "budget_tokens": 128
-  }
-
-  const normalizedResponseFormat = normalizeResponseFormat({
-    responseFormat,
-    response_format,
-    outputSchema,
-    output_schema,
-  });
-
-  if (normalizedResponseFormat) {
-    payload.response_format = normalizedResponseFormat;
-  }
-
-  const response = await fetch(resolveApiUrl(), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
+    const normalizedToolChoice = normalizeToolChoice(
+      toolChoice || tool_choice,
+      tools
     );
-  }
+    if (normalizedToolChoice) {
+      payload.tool_choice = normalizedToolChoice;
+    }
 
-  return (await response.json()) as InvokeResult;
+    payload.max_tokens = params.maxTokens || params.max_tokens || 32768;
+    
+    // Only add thinking budget if model supports it
+    const model = String(payload.model);
+    if (model.includes('gemini') || model.includes('thinking')) {
+      payload.thinking = {
+        "budget_tokens": parseInt(process.env.LLM_THINKING_BUDGET || "128", 10)
+      };
+    }
+
+    const normalizedResponseFormat = normalizeResponseFormat({
+      responseFormat,
+      response_format,
+      outputSchema,
+      output_schema,
+    });
+
+    if (normalizedResponseFormat) {
+      payload.response_format = normalizedResponseFormat;
+    }
+
+    const controller = new AbortController();
+    const timeout = parseInt(process.env.LLM_TIMEOUT || "60000", 10);
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(resolveApiUrl(), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${ENV.forgeApiKey}`,
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
+        );
+      }
+
+      return (await response.json()) as InvokeResult;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }, parseInt(process.env.LLM_MAX_RETRIES || "3", 10));
 }

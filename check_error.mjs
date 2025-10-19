@@ -1,8 +1,24 @@
-import { drizzle } from 'drizzle-orm/mysql2';
-import { summaries } from './drizzle/schema.ts';
-import { eq } from 'drizzle-orm';
+import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
 
-const db = drizzle(process.env.DATABASE_URL);
-const results = await db.select().from(summaries).orderBy(summaries.createdAt).limit(5);
+dotenv.config();
 
-console.log(JSON.stringify(results, null, 2));
+const connection = await mysql.createConnection(process.env.DATABASE_URL);
+
+try {
+  const [summaries] = await connection.execute(
+    'SELECT id, bookTitle, status, errorMessage FROM summaries ORDER BY createdAt DESC LIMIT 5'
+  );
+  
+  console.log('Recent summaries:');
+  summaries.forEach(s => {
+    console.log(`\nID: ${s.id}`);
+    console.log(`Title: ${s.bookTitle}`);
+    console.log(`Status: ${s.status}`);
+    if (s.errorMessage) {
+      console.log(`Error: ${s.errorMessage}`);
+    }
+  });
+} finally {
+  await connection.end();
+}
