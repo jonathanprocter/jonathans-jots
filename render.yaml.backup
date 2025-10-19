@@ -1,8 +1,10 @@
+# Backup of render.yaml - moved to manual configuration
+# This file is kept for reference only
+
 services:
   - type: web
     name: jonathans-jots
     runtime: node
-    plan: free
     buildCommand: pnpm install && pnpm run build
     startCommand: pnpm run start
     envVars:
@@ -15,10 +17,10 @@ services:
       - key: VITE_APP_TITLE
         value: Jonathan's Jots
       - key: VITE_OAUTH_PORTAL_URL
-        value: https://jonathans-jots.onrender.com
-      - key: VITE_APP_ID
-        value: jonathans-jots
+        sync: false
+
 databases:
   - name: jonathans-jots-db
-    plan: free
+    databaseName: jonathans_jots_db
+    user: jonathans_jots_db_user
 
