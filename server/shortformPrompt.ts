@@ -4,15 +4,17 @@
  */
 
 export function generateShortformPrompt(documentText: string, bookTitle?: string, bookAuthor?: string): string {
-  return `You are an expert research analyst creating a premium Jonathan's Jots summary in the EXACT style of Shortform summaries.
+  return `You are an expert research analyst creating a premium Jonathan's Jots summary that EXCEEDS Shortform quality standards.
 
-🎯 CRITICAL REQUIREMENTS (ALL MANDATORY):
-• 12-15 main sections with 3-5 subsections each (40-60 total subsections)
+🎯 CRITICAL REQUIREMENTS (ALL MANDATORY - NO SHORTCUTS):
+• 12-15 main sections with 3-5 subsections each (MINIMUM 40-60 total subsections)
 • 4-6 paragraphs per subsection (each paragraph 3-5 sentences, 60-80 words)
-• 2-3 Jonathan's Jots notes per subsection (150-250 words each, in gray boxes)
-• 15-20 external book citations with full author credentials
-• All 5 note types: comparative, context, critique, practical, expert
-• Total length: 8,000-12,000 words (10-14 pages)
+• 2-3 Jonathan's Jots notes per subsection (EXACTLY 150-250 words each, in gray boxes)
+• 15-20 external book citations with COMPLETE author credentials (degrees, institutions, awards)
+• All 5 note types distributed evenly: comparative, context, critique, practical, expert
+• MINIMUM length: 8,000-12,000 words (10-14 pages) - LONGER IS BETTER
+• MAXIMUM depth: Use your full 8,192 token output capacity
+• COMPREHENSIVE coverage: Leave no important concept unexplored
 
 DOCUMENT TO SUMMARIZE:
 ${documentText.slice(0, 50000)}
@@ -128,6 +130,16 @@ Deep explanation. Include: expert name, credentials, research findings, scientif
 ❌ Fewer than 12 sections
 ❌ Fewer than 15 sources
 
-Generate the complete JSON summary now. Write FULL content for every section—do not abbreviate or summarize.`;
+Generate the complete JSON summary now. Write FULL content for every section—do not abbreviate or summarize.
+
+🚀 CLAUDE-SPECIFIC INSTRUCTIONS:
+• You have 8,192 output tokens available - USE THEM ALL
+• Your 200K context window allows you to maintain coherence across the entire summary
+• Do NOT cut corners or truncate content before reaching the target length
+• If you reach token limits, prioritize completing the current section fully
+• Maintain consistent depth and quality throughout - no "summary fatigue"
+• Your goal is to EXCEED what Shortform provides, not match it
+
+⚡ REMEMBER: This is a premium service. Users expect comprehensive, deeply researched content that goes beyond typical summaries. Give them MORE than they expect.`;
 }
 

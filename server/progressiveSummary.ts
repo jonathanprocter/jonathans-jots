@@ -1,4 +1,5 @@
 import { invokeLLM } from './_core/llm';
+import { invokeLLMWithRouting } from './_core/llmRouter';
 import { generateShortformPrompt } from './shortformPrompt';
 import { getDb } from './db';
 import { documents, summaries } from '../drizzle/schema';
@@ -57,10 +58,11 @@ export async function generateSummaryWithProgress(
       totalSections: 10,
     });
 
-    // Call LLM
-    const response = await invokeLLM({
+    // Call LLM with intelligent routing - use Claude for comprehensive summaries
+    console.log('[Summary] Using Claude 3.5 Sonnet for comprehensive summary generation');
+    const response = await invokeLLMWithRouting({
       messages: [{ role: 'user', content: prompt }],
-    });
+    }, 'summary_generation');
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
