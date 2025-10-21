@@ -1,5 +1,5 @@
 import { ManusClient } from "manus-client";
-import { db } from "../db";
+import * as db from "../db";
 import { COOKIE_NAME } from "@shared/const";
 import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
