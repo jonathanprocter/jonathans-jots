@@ -130,7 +130,9 @@ Deep explanation. Include: expert name, credentials, research findings, scientif
 ❌ Fewer than 12 sections
 ❌ Fewer than 15 sources
 
-Generate the complete JSON summary now. Write FULL content for every section—do not abbreviate or summarize.
+CRITICAL: Return ONLY the JSON object. Do not include any explanatory text, markdown formatting, or code blocks. Start your response with { and end with }. No preamble, no postamble, just pure JSON.
+
+Generate the complete JSON summary now. Write FULL content for every section—do not abbreviate or summarize.`;
 
 🚀 CLAUDE-SPECIFIC INSTRUCTIONS:
 • You have 8,192 output tokens available - USE THEM ALL
