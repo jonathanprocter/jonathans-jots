@@ -1,5 +1,4 @@
-import { invokeLLM } from './_core/llm';
-import { invokeLLMWithRouting } from './_core/llmRouter';
+import { invokeLLM as invokeLLMWithRouting } from './_core/llm';
 import { generateShortformPrompt } from './shortformPrompt';
 import { getDb } from './db';
 import { documents, summaries } from '../drizzle/schema';
@@ -13,7 +12,6 @@ interface ProgressUpdate {
   partialContent?: any;
 }
 
-// Store progress updates in memory (in production, use Redis or similar)
 const progressStore = new Map<string, ProgressUpdate>();
 
 export function getProgress(summaryId: string): ProgressUpdate | null {
@@ -30,14 +28,12 @@ export async function generateSummaryWithProgress(
     const db = await getDb();
     if (!db) throw new Error('Database not available');
 
-    // Initialize progress
     progressStore.set(summaryId, {
       stage: 'Extracting document content...',
       sectionsCompleted: 0,
       totalSections: 0,
     });
 
-    // Get document
     const [doc] = await db.select().from(documents).where(eq(documents.id, documentId)).limit(1);
     if (!doc || !doc.extractedText) {
       throw new Error('Document not found or not processed');
@@ -46,10 +42,9 @@ export async function generateSummaryWithProgress(
     progressStore.set(summaryId, {
       stage: 'Analyzing content and researching related books...',
       sectionsCompleted: 0,
-      totalSections: 10, // Estimated
+      totalSections: 10,
     });
 
-    // Generate prompt
     const prompt = generateShortformPrompt(doc.extractedText, bookTitle || undefined, bookAuthor || undefined);
 
     progressStore.set(summaryId, {
@@ -58,7 +53,6 @@ export async function generateSummaryWithProgress(
       totalSections: 10,
     });
 
-    // Call LLM with intelligent routing - use Claude for comprehensive summaries
     console.log('[Summary] Using Claude 3.5 Sonnet for comprehensive summary generation');
     const response = await invokeLLMWithRouting({
       messages: [{ role: 'user', content: prompt }],
@@ -69,13 +63,16 @@ export async function generateSummaryWithProgress(
       throw new Error('No content generated');
     }
 
-    // Handle content type (string or array)
     const contentText = typeof content === 'string' ? content : 
       Array.isArray(content) ? content.find(c => c.type === 'text')?.text || '' : '';
 
-    // Parse JSON
+    // DEBUG: Log what Claude actually returned
+    console.log('[DEBUG] Claude response length:', contentText.length);
+    console.log('[DEBUG] First 500 chars:', contentText.substring(0, 500));
+
     const jsonMatch = contentText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
+      console.error('[ERROR] Full response from Claude:', contentText);
       throw new Error('Failed to parse AI response: No JSON found in response');
     }
 
@@ -83,15 +80,14 @@ export async function generateSummaryWithProgress(
     try {
       summaryData = JSON.parse(jsonMatch[0]);
     } catch (parseError) {
+      console.error('[ERROR] Failed to parse JSON:', jsonMatch[0].substring(0, 1000));
       throw new Error(`Failed to parse AI response JSON: ${parseError instanceof Error ? parseError.message : 'Invalid JSON'}`);
     }
 
-    // Validate required fields
     if (!summaryData.sections || !Array.isArray(summaryData.sections)) {
       throw new Error('Invalid AI response: missing or invalid sections array');
     }
 
-    // Update progress as we process sections
     const totalSections = summaryData.sections.length;
     
     for (let i = 0; i < totalSections; i++) {
@@ -110,7 +106,6 @@ export async function generateSummaryWithProgress(
       });
     }
 
-    // Save to database
     await db
       .update(summaries)
       .set({
@@ -132,7 +127,6 @@ export async function generateSummaryWithProgress(
       partialContent: summaryData,
     });
 
-    // Clean up after 5 minutes
     setTimeout(() => {
       progressStore.delete(summaryId);
     }, 5 * 60 * 1000);
@@ -145,7 +139,6 @@ export async function generateSummaryWithProgress(
       totalSections: 0,
     });
     
-    // Update database status
     const db = await getDb();
     if (db) {
       await db
@@ -169,4 +162,3 @@ function countJotsNotes(sections: any[]): number {
   }
   return count;
 }
-
