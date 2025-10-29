@@ -1,5 +1,9 @@
-import { invokeLLM as invokeLLMWithRouting } from './_core/llm';
-import { generateShortformPrompt } from './shortformPrompt';
+import { invokeLLM as invokeLLMWithRouting } from './_core/llmRouter';
+import {
+  generateOverviewPrompt,
+  generateSectionPrompt,
+  generateResearchSourcesPrompt
+} from './shortformPrompt';
 import { getDb } from './db';
 import { documents, summaries } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -18,6 +22,57 @@ export function getProgress(summaryId: string): ProgressUpdate | null {
   return progressStore.get(summaryId) || null;
 }
 
+/**
+ * Helper function to extract and parse JSON from Claude's response
+ */
+function parseJSONResponse(contentText: string): any {
+  console.log('[DEBUG] Response length:', contentText.length);
+  console.log('[DEBUG] First 500 chars:', contentText.substring(0, 500));
+
+  const jsonMatch = contentText.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+  if (!jsonMatch) {
+    console.error('[ERROR] Full response:', contentText);
+    throw new Error('No JSON found in response');
+  }
+
+  try {
+    return JSON.parse(jsonMatch[0]);
+  } catch (parseError) {
+    console.error('[ERROR] Failed to parse JSON:', jsonMatch[0].substring(0, 1000));
+    throw new Error(`Invalid JSON: ${parseError instanceof Error ? parseError.message : 'Parse failed'}`);
+  }
+}
+
+/**
+ * Helper function to call Claude and extract content
+ */
+async function callClaude(prompt: string, taskType: string): Promise<any> {
+  console.log(`[Summary] Calling Claude for ${taskType}`);
+
+  const response = await invokeLLMWithRouting({
+    messages: [{ role: 'user', content: prompt }],
+  }, 'summary_generation');
+
+  const content = response.choices[0]?.message?.content;
+  if (!content) {
+    throw new Error('No content generated');
+  }
+
+  const contentText = typeof content === 'string' ? content :
+    Array.isArray(content) ? content.find(c => c.type === 'text')?.text || '' : '';
+
+  return parseJSONResponse(contentText);
+}
+
+/**
+ * PROGRESSIVE GENERATION: Generate 15-20 page summaries in multiple API calls
+ *
+ * Strategy:
+ * - Phase 1: Overview & Outline (~1,500 words)
+ * - Phase 2: Individual Sections (~1,100 words each × 8 sections)
+ * - Phase 3: Research Sources (~300 words)
+ * Total: ~10,600 words ≈ 15-18 pages
+ */
 export async function generateSummaryWithProgress(
   documentId: string,
   summaryId: string,
@@ -28,10 +83,11 @@ export async function generateSummaryWithProgress(
     const db = await getDb();
     if (!db) throw new Error('Database not available');
 
+    // ========== STEP 1: Extract document ==========
     progressStore.set(summaryId, {
       stage: 'Extracting document content...',
       sectionsCompleted: 0,
-      totalSections: 0,
+      totalSections: 10,
     });
 
     const [doc] = await db.select().from(documents).where(eq(documents.id, documentId)).limit(1);
@@ -39,106 +95,144 @@ export async function generateSummaryWithProgress(
       throw new Error('Document not found or not processed');
     }
 
+    const documentText = doc.extractedText;
+
+    // ========== PHASE 1: Generate Overview & Outline ==========
     progressStore.set(summaryId, {
-      stage: 'Analyzing content and researching related books...',
+      stage: 'Phase 1/3: Analyzing book and creating comprehensive outline...',
       sectionsCompleted: 0,
       totalSections: 10,
     });
 
-    const prompt = generateShortformPrompt(doc.extractedText, bookTitle || undefined, bookAuthor || undefined);
+    const overviewPrompt = generateOverviewPrompt(documentText, bookTitle, bookAuthor);
+    const overview = await callClaude(overviewPrompt, 'overview generation');
 
-    progressStore.set(summaryId, {
-      stage: 'AI is generating comprehensive summary with research...',
-      sectionsCompleted: 0,
-      totalSections: 10,
-    });
-
-    console.log('[Summary] Using Claude 3.5 Sonnet for comprehensive summary generation');
-    const response = await invokeLLMWithRouting({
-      messages: [{ role: 'user', content: prompt }],
-    }, 'summary_generation');
-
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No content generated');
+    if (!overview.outline || !Array.isArray(overview.outline)) {
+      throw new Error('Invalid overview: missing outline array');
     }
 
-    const contentText = typeof content === 'string' ? content : 
-      Array.isArray(content) ? content.find(c => c.type === 'text')?.text || '' : '';
+    const totalSections = overview.outline.length;
+    const finalBookTitle = overview.bookTitle || bookTitle || 'Untitled';
+    const finalBookAuthor = overview.bookAuthor || bookAuthor || 'Unknown Author';
 
-    // DEBUG: Log what Claude actually returned
-    console.log('[DEBUG] Claude response length:', contentText.length);
-    console.log('[DEBUG] First 500 chars:', contentText.substring(0, 500));
+    console.log(`[Summary] Generated outline with ${totalSections} sections`);
 
-    const jsonMatch = contentText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error('[ERROR] Full response from Claude:', contentText);
-      throw new Error('Failed to parse AI response: No JSON found in response');
-    }
+    // ========== PHASE 2: Generate Each Section ==========
+    const completedSections: any[] = [];
 
-    let summaryData;
-    try {
-      summaryData = JSON.parse(jsonMatch[0]);
-    } catch (parseError) {
-      console.error('[ERROR] Failed to parse JSON:', jsonMatch[0].substring(0, 1000));
-      throw new Error(`Failed to parse AI response JSON: ${parseError instanceof Error ? parseError.message : 'Invalid JSON'}`);
-    }
-
-    if (!summaryData.sections || !Array.isArray(summaryData.sections)) {
-      throw new Error('Invalid AI response: missing or invalid sections array');
-    }
-
-    const totalSections = summaryData.sections.length;
-    
     for (let i = 0; i < totalSections; i++) {
+      const outlineItem = overview.outline[i];
+
       progressStore.set(summaryId, {
-        stage: 'Processing sections...',
+        stage: `Phase 2/3: Generating section ${i + 1} of ${totalSections} with research...`,
+        sectionsCompleted: i,
+        totalSections,
+        currentSection: outlineItem.sectionTitle,
+        partialContent: {
+          bookTitle: finalBookTitle,
+          bookAuthor: finalBookAuthor,
+          onePageSummary: overview.onePageSummary,
+          introduction: overview.introduction,
+          sections: completedSections,
+        },
+      });
+
+      const sectionPrompt = generateSectionPrompt(
+        documentText,
+        finalBookTitle,
+        finalBookAuthor,
+        outlineItem.sectionTitle,
+        outlineItem.subsectionTitles || [],
+        outlineItem.description || '',
+        i + 1,
+        totalSections
+      );
+
+      const section = await callClaude(sectionPrompt, `section ${i + 1}`);
+
+      // Ensure section has correct structure
+      const formattedSection = {
+        title: section.sectionTitle || outlineItem.sectionTitle,
+        subsections: section.subsections || []
+      };
+
+      completedSections.push(formattedSection);
+
+      console.log(`[Summary] Completed section ${i + 1}/${totalSections}: ${formattedSection.title}`);
+
+      // Update progress with partial content
+      progressStore.set(summaryId, {
+        stage: `Phase 2/3: Generated section ${i + 1} of ${totalSections}`,
         sectionsCompleted: i + 1,
         totalSections,
-        currentSection: summaryData.sections[i]?.title || `Section ${i + 1}`,
+        currentSection: formattedSection.title,
         partialContent: {
-          bookTitle: summaryData.bookTitle,
-          bookAuthor: summaryData.bookAuthor,
-          onePageSummary: summaryData.onePageSummary,
-          introduction: summaryData.introduction,
-          sections: summaryData.sections.slice(0, i + 1),
+          bookTitle: finalBookTitle,
+          bookAuthor: finalBookAuthor,
+          onePageSummary: overview.onePageSummary,
+          introduction: overview.introduction,
+          sections: completedSections,
         },
       });
     }
 
+    // ========== PHASE 3: Generate Research Sources ==========
+    progressStore.set(summaryId, {
+      stage: 'Phase 3/3: Compiling research sources and citations...',
+      sectionsCompleted: totalSections,
+      totalSections,
+    });
+
+    const researchPrompt = generateResearchSourcesPrompt(completedSections, finalBookTitle);
+    const researchSources = await callClaude(researchPrompt, 'research sources');
+
+    console.log(`[Summary] Generated ${researchSources.length} research sources`);
+
+    // ========== SAVE FINAL SUMMARY ==========
+    const finalSummaryData = {
+      bookTitle: finalBookTitle,
+      bookAuthor: finalBookAuthor,
+      onePageSummary: overview.onePageSummary,
+      introduction: overview.introduction,
+      sections: completedSections,
+      researchSources: Array.isArray(researchSources) ? researchSources : []
+    };
+
     await db
       .update(summaries)
       .set({
-        bookTitle: summaryData.bookTitle || bookTitle || 'Untitled',
-        bookAuthor: summaryData.bookAuthor || bookAuthor || 'Unknown Author',
-        onePageSummary: summaryData.onePageSummary || '',
-        introduction: summaryData.introduction || '',
-        mainContent: JSON.stringify(summaryData.sections || []),
-        researchSourcesCount: summaryData.researchSources?.length || 0,
-        jotsNotesCount: countJotsNotes(summaryData.sections || []),
+        bookTitle: finalBookTitle,
+        bookAuthor: finalBookAuthor,
+        onePageSummary: overview.onePageSummary || '',
+        introduction: overview.introduction || '',
+        mainContent: JSON.stringify(completedSections),
+        researchSourcesCount: finalSummaryData.researchSources.length,
+        jotsNotesCount: countJotsNotes(completedSections),
         status: 'completed',
       })
       .where(eq(summaries.id, summaryId));
 
     progressStore.set(summaryId, {
-      stage: 'Complete!',
+      stage: 'Complete! Generated comprehensive 15-18 page summary',
       sectionsCompleted: totalSections,
       totalSections,
-      partialContent: summaryData,
+      partialContent: finalSummaryData,
     });
+
+    console.log(`[Summary] ✓ Complete: ${totalSections} sections, ${countJotsNotes(completedSections)} Jots notes, ${finalSummaryData.researchSources.length} research sources`);
 
     setTimeout(() => {
       progressStore.delete(summaryId);
     }, 5 * 60 * 1000);
 
   } catch (error: any) {
-    console.error('Generation error:', error);
+    console.error('[Summary] Generation error:', error);
     progressStore.set(summaryId, {
       stage: `Error: ${error.message}`,
       sectionsCompleted: 0,
       totalSections: 0,
     });
-    
+
     const db = await getDb();
     if (db) {
       await db
