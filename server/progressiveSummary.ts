@@ -152,10 +152,10 @@ export async function generateSummaryWithProgress(
 function countJotsNotes(sections: any[]): number {
   let count = 0;
   for (const section of sections) {
-    if (section.content) {
-      for (const item of section.content) {
-        if (item.type === 'shortform_note') {
-          count++;
+    if (section.subsections) {
+      for (const subsection of section.subsections) {
+        if (subsection.jotsNotes) {
+          count += subsection.jotsNotes.length;
         }
       }
     }
