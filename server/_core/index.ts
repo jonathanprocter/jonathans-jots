@@ -8,6 +8,11 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { initializeDatabase } from "../initDb";
+import multer from "multer";
+import { nanoid } from "nanoid";
+import { createDocument, updateDocumentStatus } from "../db";
+import { storagePut } from "../storage";
+import { getFileType, validateFileSize, processDocument } from "../documentProcessor";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -82,6 +87,44 @@ function setupGracefulShutdown(server: ReturnType<typeof createServer>) {
   });
 }
 
+/**
+ * Get MIME type for supported file types
+ */
+function getMimeType(fileType: string): string {
+  const mimeTypes: Record<string, string> = {
+    'pdf': 'application/pdf',
+    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'txt': 'text/plain',
+    'rtf': 'application/rtf',
+  };
+  return mimeTypes[fileType] || 'application/octet-stream';
+}
+
+/**
+ * Process document asynchronously after upload
+ */
+async function processDocumentAsync(
+  documentId: string,
+  buffer: Buffer,
+  fileType: 'pdf' | 'docx' | 'txt' | 'rtf'
+): Promise<void> {
+  try {
+    await updateDocumentStatus(documentId, 'processing');
+
+    const result = await processDocument(buffer, fileType);
+
+    if (!result.success) {
+      throw new Error(result.error || 'Document processing failed');
+    }
+
+    await updateDocumentStatus(documentId, 'completed', result.text);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error processing document:', errorMessage);
+    throw error;
+  }
+}
+
 async function startServer() {
   const app = express();
   const server = createServer(app);
@@ -97,7 +140,77 @@ async function startServer() {
   
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
-  
+
+  // Configure multer for file uploads (memory storage)
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  });
+
+  // HTTP file upload endpoint (avoids FileReader issues in Replit)
+  app.post("/api/upload", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const filename = req.file.originalname;
+      const buffer = req.file.buffer;
+      const fileSize = req.file.size;
+
+      // Get user from session (via createContext)
+      const ctx = await createContext({ req, res });
+      const userId = ctx.user?.id || 'anonymous';
+
+      // Validate file type
+      const fileType = getFileType(filename);
+      if (!fileType) {
+        return res.status(400).json({
+          error: 'Unsupported file type. Please upload .pdf, .docx, .txt, or .rtf files.'
+        });
+      }
+
+      // Validate file size
+      if (!validateFileSize(fileSize)) {
+        return res.status(400).json({ error: 'File size exceeds 10MB limit.' });
+      }
+
+      // Upload to S3
+      const storageKey = `documents/${userId}/${nanoid()}-${filename}`;
+      const mimeType = getMimeType(fileType);
+      const { url: storageUrl } = await storagePut(storageKey, buffer, mimeType);
+
+      // Create document record
+      const documentId = nanoid();
+      const document = await createDocument({
+        id: documentId,
+        userId,
+        originalFilename: filename,
+        fileType,
+        fileSize,
+        storageKey,
+        storageUrl,
+        status: 'uploaded',
+      });
+
+      // Process document asynchronously
+      processDocumentAsync(documentId, buffer, fileType).catch(error => {
+        console.error('Document processing failed:', error);
+        updateDocumentStatus(documentId, 'failed', undefined, error.message);
+      });
+
+      res.json({
+        success: true,
+        documentId: document.id,
+        message: 'Document uploaded successfully. Processing has started.',
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      const message = error instanceof Error ? error.message : 'Upload failed';
+      res.status(500).json({ error: message });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
