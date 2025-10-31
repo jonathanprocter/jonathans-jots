@@ -47,41 +47,48 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
+      {/* Header - Mobile Optimized */}
       <div className="border-b-4 border-[#D4772E] bg-white sticky top-0 z-10 shadow-sm">
-        <div className="container py-3 sm:py-4 px-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-          <div className="flex items-center gap-4">
-            <Button onClick={onBack} variant="outline" className="text-sm sm:text-base">
+        <div className="container py-2 sm:py-3 md:py-4 px-3 sm:px-4 flex flex-col gap-2 sm:gap-3">
+          <div className="flex items-center justify-between">
+            <Button
+              onClick={onBack}
+              variant="outline"
+              className="text-xs sm:text-sm md:text-base px-3 sm:px-4 py-2 min-h-[36px] touch-manipulation"
+            >
               ← Back
             </Button>
             {isGenerating && (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                <div className="flex-1">
-                  <div className="flex flex-col">
-                    <span className="text-xs sm:text-sm font-medium text-[#2E4057]">
-                      {progress?.stage || 'Generating...'}
-                    </span>
-                    {progress?.currentSection && (
-                      <span className="text-xs text-gray-500">
-                        {progress.currentSection}
-                      </span>
-                    )}
-                  </div>
-                  <div className="w-full sm:w-48 mt-2">
-                    <Progress value={progressPercentage} className="h-2" />
-                  </div>
-                </div>
-                <span className="text-xs text-gray-500 whitespace-nowrap">
-                  {progress?.sectionsCompleted || 0} / {progress?.totalSections || 0}
-                </span>
-              </div>
+              <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
+                {progress?.sectionsCompleted || 0} / {progress?.totalSections || 0} sections
+              </span>
             )}
           </div>
+          {isGenerating && (
+            <div className="w-full">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-medium text-[#2E4057] truncate flex-1">
+                    {progress?.stage || 'Generating...'}
+                  </span>
+                  <span className="text-xs sm:text-sm text-[#D4772E] font-semibold ml-2">
+                    {Math.round(progressPercentage)}%
+                  </span>
+                </div>
+                {progress?.currentSection && (
+                  <span className="text-xs text-gray-500 truncate">
+                    {progress.currentSection}
+                  </span>
+                )}
+                <Progress value={progressPercentage} className="h-2 sm:h-2.5" />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="container py-4 sm:py-8 px-4">
+      {/* Content - Mobile Optimized */}
+      <div className="container py-3 sm:py-6 md:py-8 px-3 sm:px-4">
         {!summary || summary.status === 'generating' ? (
           <div>
             {progress?.partialContent ? (
@@ -100,17 +107,20 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
                     })
                   }}
                 />
-                {/* Live generation indicator */}
-                <div className="mt-12 mb-8">
-                  <div className="jots-bar animate-pulse"></div>
-                  <div className="text-center mt-8">
-                    <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-[#2E4057] to-[#D4772E] text-white rounded-lg shadow-lg">
-                      <div className="animate-spin h-5 w-5 border-3 border-white border-t-transparent rounded-full"></div>
+                {/* Live generation indicator - Mobile Optimized */}
+                <div className="mt-8 sm:mt-12 mb-6 sm:mb-8">
+                  <div className="h-1 bg-gradient-to-r from-transparent via-[#D4772E] to-transparent animate-pulse"></div>
+                  <div className="text-center mt-6 sm:mt-8 px-3">
+                    <div className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-[#2E4057] to-[#D4772E] text-white rounded-lg shadow-lg max-w-full">
+                      <div className="animate-spin h-4 w-4 sm:h-5 sm:w-5 border-2 sm:border-3 border-white border-t-transparent rounded-full flex-shrink-0"></div>
                       <div className="text-left">
-                        <div className="font-semibold">Researching and writing...</div>
-                        <div className="text-xs opacity-90">Adding Jots Notes with external sources</div>
+                        <div className="font-semibold text-sm sm:text-base">Researching and writing...</div>
+                        <div className="text-xs opacity-90 hidden sm:block">Adding Jots Notes with external sources</div>
                       </div>
                     </div>
+                    <p className="mt-4 text-xs sm:text-sm text-gray-600">
+                      Creating comprehensive 20-page summary
+                    </p>
                   </div>
                 </div>
               </div>
@@ -121,9 +131,19 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
         ) : summary.status === 'completed' ? (
           <JotsSummaryRenderer summary={summary} />
         ) : (
-          <div className="text-center py-16">
-            <p className="text-red-600 mb-4">Summary generation failed</p>
-            <Button onClick={onBack}>Back to Dashboard</Button>
+          <div className="text-center py-12 sm:py-16 px-4">
+            <div className="max-w-md mx-auto">
+              <p className="text-red-600 mb-4 text-sm sm:text-base">Summary generation failed</p>
+              <p className="text-gray-600 mb-6 text-xs sm:text-sm">
+                {summary?.errorMessage || 'An error occurred during generation. Please try again.'}
+              </p>
+              <Button
+                onClick={onBack}
+                className="min-h-[44px] px-6 text-sm sm:text-base touch-manipulation"
+              >
+                Back to Dashboard
+              </Button>
+            </div>
           </div>
         )}
       </div>

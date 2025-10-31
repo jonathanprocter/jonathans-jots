@@ -17,10 +17,10 @@ const MODELS = {
   GPT4O: 'gpt-4o-2024-11-20',
 };
 
-// Max tokens configuration
+// Max tokens configuration - MAXIMIZED for comprehensive 20-page summaries
 const MAX_TOKENS = {
-  CLAUDE: 8192,  // Claude's maximum output
-  GPT4: 16384,   // GPT-4's maximum output
+  CLAUDE: 8192,   // Claude 3.5 Sonnet's maximum output (produces ~6,000-6,500 words = 12-13 pages)
+  GPT4: 16384,    // GPT-4o's maximum output (produces ~12,000-13,000 words = 24-26 pages)
 };
 
 /**
@@ -36,18 +36,21 @@ export type TaskType =
 
 /**
  * Get the best model for a specific task
+ * Updated to use GPT-4o for summaries to achieve 20-page target length
  */
 export const getModelForTask = (task: TaskType): string => {
   switch (task) {
     case 'summary_generation':
+      return MODELS.GPT4O; // GPT-4o for maximum length (16,384 tokens = ~20 pages)
+
     case 'research_synthesis':
     case 'comparative_analysis':
-      return MODELS.CLAUDE_SONNET; // Best for comprehensive, long-form content
-    
+      return MODELS.CLAUDE_SONNET; // Claude for deep analysis and research
+
     case 'document_processing':
     case 'quick_analysis':
       return MODELS.GPT4O; // Fast and accurate for processing
-    
+
     case 'default':
     default:
       return MODELS.CLAUDE_SONNET; // Default to Claude for quality

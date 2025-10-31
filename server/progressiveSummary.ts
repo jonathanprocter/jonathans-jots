@@ -1,4 +1,4 @@
-import { invokeLLM as invokeLLMWithRouting } from './_core/llm';
+import { invokeLLMWithRouting } from './_core/llmRouter';
 import { generateShortformPrompt } from './shortformPrompt';
 import { getDb } from './db';
 import { documents, summaries } from '../drizzle/schema';
@@ -42,18 +42,18 @@ export async function generateSummaryWithProgress(
     progressStore.set(summaryId, {
       stage: 'Analyzing content and researching related books...',
       sectionsCompleted: 0,
-      totalSections: 10,
+      totalSections: 15, // Targeting 12-15 sections for 20 pages
     });
 
     const prompt = generateShortformPrompt(doc.extractedText, bookTitle || undefined, bookAuthor || undefined);
 
     progressStore.set(summaryId, {
-      stage: 'AI is generating comprehensive summary with research...',
+      stage: 'AI is generating comprehensive 20-page summary with research...',
       sectionsCompleted: 0,
-      totalSections: 10,
+      totalSections: 15, // Updated for larger summaries
     });
 
-    console.log('[Summary] Using Claude 3.5 Sonnet for comprehensive summary generation');
+    console.log('[Summary] Using GPT-4o (16,384 tokens) for comprehensive 20-page summary generation');
     const response = await invokeLLMWithRouting({
       messages: [{ role: 'user', content: prompt }],
     }, 'summary_generation');
@@ -152,10 +152,10 @@ export async function generateSummaryWithProgress(
 function countJotsNotes(sections: any[]): number {
   let count = 0;
   for (const section of sections) {
-    if (section.content) {
-      for (const item of section.content) {
-        if (item.type === 'shortform_note') {
-          count++;
+    if (section.subsections && Array.isArray(section.subsections)) {
+      for (const subsection of section.subsections) {
+        if (subsection.jotsNotes && Array.isArray(subsection.jotsNotes)) {
+          count += subsection.jotsNotes.length;
         }
       }
     }
