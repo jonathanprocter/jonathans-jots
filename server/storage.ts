@@ -1,5 +1,5 @@
-// Local filesystem storage implementation for Jonathan's Jots
-// Stores files directly on the server filesystem
+// Storage implementation for Jonathan's Jots
+// Supports both Replit Object Storage and local filesystem
 
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -7,8 +7,15 @@ import { ENV } from './_core/env';
 
 type StorageConfig = { baseUrl: string; apiKey: string };
 
-// Storage directory
-const STORAGE_DIR = path.join(process.cwd(), 'uploads');
+// Determine storage mode: Replit Object Storage or local filesystem
+const USE_REPLIT_STORAGE = !!process.env.PRIVATE_OBJECT_DIR;
+const REPLIT_STORAGE_DIR = process.env.PRIVATE_OBJECT_DIR || '';
+const LOCAL_STORAGE_DIR = path.join(process.cwd(), 'uploads');
+
+// Storage directory (use Replit bucket if available, otherwise local)
+const STORAGE_DIR = USE_REPLIT_STORAGE ? REPLIT_STORAGE_DIR : LOCAL_STORAGE_DIR;
+
+console.log(`[Storage] Using ${USE_REPLIT_STORAGE ? 'Replit Object Storage' : 'local filesystem'}: ${STORAGE_DIR}`);
 
 // Simple in-memory cache for download URLs
 const urlCache = new Map<string, { url: string; expiry: number }>();
