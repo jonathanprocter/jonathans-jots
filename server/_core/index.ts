@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import multer from "multer";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
@@ -85,16 +86,129 @@ function setupGracefulShutdown(server: ReturnType<typeof createServer>) {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  
+
   // Health check endpoint
   app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
   });
-  
+
+  // Configure multer for file uploads (in memory, max 10MB)
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 10 * 1024 * 1024 // 10MB
+    }
+  });
+
+  // HTTP multipart file upload endpoint
+  app.post('/api/upload', (req, res, next) => {
+    upload.single('file')(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        // Multer-specific errors
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ error: 'File size exceeds 10MB limit' });
+        }
+        return res.status(400).json({ error: `Upload error: ${err.message}` });
+      } else if (err) {
+        // Other errors
+        return res.status(500).json({ error: `Upload error: ${err.message}` });
+      }
+      next();
+    });
+  }, async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const { nanoid } = await import('nanoid');
+      const { storagePut } = await import('../storage');
+      const { processDocument, getFileType, validateFileSize } = await import('../documentProcessor');
+      const { createDocument, updateDocumentStatus } = await import('../db');
+
+      const filename = req.file.originalname;
+      const fileSize = req.file.size;
+      const buffer = req.file.buffer;
+
+      // Get user from context (if authenticated)
+      const userId = 'anonymous'; // For now, since we don't have auth context in HTTP endpoint
+
+      // Validate file type
+      const fileType = getFileType(filename);
+      if (!fileType) {
+        return res.status(400).json({
+          error: 'Unsupported file type. Please upload .pdf, .docx, .txt, or .rtf files.'
+        });
+      }
+
+      // Validate file size
+      if (!validateFileSize(fileSize)) {
+        return res.status(400).json({
+          error: 'File size exceeds 10MB limit.'
+        });
+      }
+
+      // Get mime type
+      const mimeTypes: Record<string, string> = {
+        'pdf': 'application/pdf',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'txt': 'text/plain',
+        'rtf': 'application/rtf',
+      };
+      const mimeType = mimeTypes[fileType] || 'application/octet-stream';
+
+      // Upload to S3
+      const storageKey = `documents/${userId}/${nanoid()}-${filename}`;
+      const { url: storageUrl } = await storagePut(storageKey, buffer, mimeType);
+
+      // Create document record
+      const documentId = nanoid();
+      const document = await createDocument({
+        id: documentId,
+        userId,
+        originalFilename: filename,
+        fileType,
+        fileSize,
+        storageKey,
+        storageUrl,
+        status: 'uploaded',
+      });
+
+      // Process document asynchronously
+      (async () => {
+        try {
+          await updateDocumentStatus(documentId, 'processing');
+          const result = await processDocument(buffer, fileType);
+
+          if (!result.success) {
+            throw new Error(result.error || 'Document processing failed');
+          }
+
+          await updateDocumentStatus(documentId, 'completed', result.text);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error('Document processing failed:', error);
+          await updateDocumentStatus(documentId, 'failed', undefined, errorMessage);
+        }
+      })();
+
+      return res.status(200).json({
+        success: true,
+        documentId: document.id,
+        message: 'Document uploaded successfully. Processing has started.',
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      return res.status(500).json({
+        error: error instanceof Error ? error.message : 'Upload failed'
+      });
+    }
+  });
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   
