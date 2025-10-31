@@ -205,6 +205,33 @@ async function startServer() {
     }
   });
 
+  // Serve uploaded files from local storage
+  app.get('/api/storage/*', async (req, res) => {
+    try {
+      const key = req.params[0]; // Get everything after /api/storage/
+      const { storageGetFile } = await import('../storage');
+      const buffer = await storageGetFile(key);
+
+      // Determine content type from file extension
+      const ext = key.split('.').pop()?.toLowerCase();
+      const mimeTypes: Record<string, string> = {
+        'pdf': 'application/pdf',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'txt': 'text/plain',
+        'rtf': 'application/rtf',
+      };
+      const contentType = mimeTypes[ext || ''] || 'application/octet-stream';
+
+      res.setHeader('Content-Type', contentType);
+      res.send(buffer);
+    } catch (error) {
+      console.error('Storage retrieval error:', error);
+      res.status(404).json({
+        error: error instanceof Error ? error.message : 'File not found'
+      });
+    }
+  });
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
