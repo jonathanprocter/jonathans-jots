@@ -159,8 +159,10 @@ cd shortform-summary-generator
 pnpm install
 ```
 
+**Note**: `pnpm install` automatically creates a `.env` file from `.env.example` if one doesn't exist.
+
 ### 2. Configure Environment
-Create `.env` file:
+Edit the `.env` file with your configuration:
 ```env
 DATABASE_URL=mysql://user:pass@host:port/db
 OPENAI_API_KEY=your_key
@@ -169,6 +171,12 @@ AWS_ACCESS_KEY_ID=your_key
 AWS_SECRET_ACCESS_KEY=your_secret
 AWS_REGION=us-east-1
 AWS_S3_BUCKET=your-bucket
+```
+
+Or manually create it from the template:
+```bash
+cp .env.example .env
+# Then edit .env with your values
 ```
 
 ### 3. Set Up Database
