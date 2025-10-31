@@ -11,7 +11,8 @@ export async function initializeDatabase() {
 
     const db = await getDb();
     if (!db) {
-      throw new Error("Database not available");
+      console.warn("[Database] Skipping database initialization: DATABASE_URL not configured");
+      return;
     }
 
     // Create users table
