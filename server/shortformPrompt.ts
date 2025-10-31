@@ -16,6 +16,14 @@ CRITICAL REQUIREMENTS (ALL MANDATORY - NO SHORTCUTS):
 - MAXIMUM depth: Use your full 8,192 token output capacity
 - COMPREHENSIVE coverage: Leave no important concept unexplored
 
+FORMATTING RULES (CRITICAL):
+- NO MARKDOWN SYNTAX WHATSOEVER - Do not use **, *, #, or any markdown formatting
+- Write plain text only with proper punctuation and sentence structure
+- Use actual quotation marks (" ") not markdown emphasis
+- The content will be formatted by the application - provide clean text only
+- Example: Write "important concept" NOT **important concept**
+- Example: Write "emphasis on this" NOT *emphasis on this*
+
 DOCUMENT TO SUMMARIZE:
 ${documentText.slice(0, 50000)}
 
