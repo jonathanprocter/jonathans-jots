@@ -1,11 +1,17 @@
-import { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Upload, FileText, Loader2 } from 'lucide-react';
-import { trpc } from '@/lib/trpc';
-import { toast } from 'sonner';
+import { useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Upload, FileText, Loader2 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 interface DocumentUploadProps {
   onUploadSuccess?: (documentId: string) => void;
@@ -17,16 +23,16 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadMutation = trpc.documents.upload.useMutation({
-    onSuccess: (data) => {
-      toast.success('Document uploaded successfully!');
+    onSuccess: data => {
+      toast.success("Document uploaded successfully!");
       setFile(null);
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
       onUploadSuccess?.(data.documentId);
     },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to upload document');
+    onError: error => {
+      toast.error(error.message || "Failed to upload document");
       setUploading(false);
     },
   });
@@ -35,17 +41,20 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       // Validate file type
-      const validTypes = ['.pdf', '.docx', '.txt', '.rtf'];
-      const fileExtension = '.' + selectedFile.name.split('.').pop()?.toLowerCase();
-      
+      const validTypes = [".pdf", ".docx", ".txt", ".rtf"];
+      const fileExtension =
+        "." + selectedFile.name.split(".").pop()?.toLowerCase();
+
       if (!validTypes.includes(fileExtension)) {
-        toast.error('Invalid file type. Please upload .pdf, .docx, .txt, or .rtf files.');
+        toast.error(
+          "Invalid file type. Please upload .pdf, .docx, .txt, or .rtf files."
+        );
         return;
       }
 
       // Validate file size (10MB)
       if (selectedFile.size > 10 * 1024 * 1024) {
-        toast.error('File size exceeds 10MB limit.');
+        toast.error("File size exceeds 10MB limit.");
         return;
       }
 
@@ -55,7 +64,7 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
 
   const handleUpload = async () => {
     if (!file) {
-      toast.error('Please select a file first');
+      toast.error("Please select a file first");
       return;
     }
 
@@ -67,7 +76,7 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
 
       // Convert ArrayBuffer to base64
       const bytes = new Uint8Array(arrayBuffer);
-      let binary = '';
+      let binary = "";
       for (let i = 0; i < bytes.byteLength; i++) {
         binary += String.fromCharCode(bytes[i]);
       }
@@ -81,8 +90,9 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
 
       setUploading(false);
     } catch (error) {
-      console.error('File upload error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to upload file';
+      console.error("File upload error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to upload file";
       toast.error(errorMessage);
       setUploading(false);
     }
@@ -96,7 +106,8 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
           Upload Document
         </CardTitle>
         <CardDescription>
-          Upload a .pdf, .docx, .txt, or .rtf file to generate a Jonathan's Jots-style summary
+          Upload a .pdf, .docx, .txt, or .rtf file to generate a Jonathan's
+          Jots-style summary
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -114,7 +125,9 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <FileText className="h-4 w-4" />
               <span>{file.name}</span>
-              <span className="text-xs">({(file.size / 1024).toFixed(2)} KB)</span>
+              <span className="text-xs">
+                ({(file.size / 1024).toFixed(2)} KB)
+              </span>
             </div>
           )}
         </div>
@@ -147,4 +160,3 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
     </Card>
   );
 }
-

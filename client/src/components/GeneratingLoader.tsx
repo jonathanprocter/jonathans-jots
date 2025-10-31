@@ -1,10 +1,12 @@
-import { JotsLogo } from './JotsLogo';
+import { JotsLogo } from "./JotsLogo";
 
 interface GeneratingLoaderProps {
   stage?: string;
 }
 
-export function GeneratingLoader({ stage = 'Generating your summary...' }: GeneratingLoaderProps) {
+export function GeneratingLoader({
+  stage = "Generating your summary...",
+}: GeneratingLoaderProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4">
       {/* Animated logo */}
@@ -18,10 +20,8 @@ export function GeneratingLoader({ stage = 'Generating your summary...' }: Gener
       </div>
 
       {/* Status text */}
-      <h3 className="text-2xl font-bold text-[#2E4057] mb-3">
-        {stage}
-      </h3>
-      
+      <h3 className="text-2xl font-bold text-[#2E4057] mb-3">{stage}</h3>
+
       {/* Progress indicators */}
       <div className="space-y-2 text-center max-w-md">
         <p className="text-sm text-gray-600">
@@ -46,4 +46,3 @@ export function GeneratingLoader({ stage = 'Generating your summary...' }: Gener
     </div>
   );
 }
-

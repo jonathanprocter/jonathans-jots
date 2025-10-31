@@ -56,7 +56,7 @@ export async function generateSummaryWithProgress(
     console.log('[Summary] Using Claude 3.5 Sonnet for comprehensive summary generation');
     const response = await invokeLLMWithRouting({
       messages: [{ role: 'user', content: prompt }],
-    }, 'summary_generation');
+    });
 
     const content = response.choices[0]?.message?.content;
     if (!content) {

@@ -18,11 +18,17 @@ class SDK {
   }
 
   // OAuth methods disabled until ManusClient is available
-  async exchangeCodeForToken(code: string, state: string) {
+  async exchangeCodeForToken(code: string, state: string): Promise<{ accessToken: string }> {
     throw new Error("OAuth not configured - ManusClient not available");
   }
 
-  async getUserInfo(accessToken: string) {
+  async getUserInfo(accessToken: string): Promise<{
+    openId: string;
+    name?: string;
+    email?: string;
+    loginMethod?: string;
+    platform?: string;
+  }> {
     throw new Error("OAuth not configured - ManusClient not available");
   }
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 type SummaryData = {
   id?: string;
@@ -18,7 +18,9 @@ interface JotsSummaryRendererProps {
   summary: SummaryData;
 }
 
-export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProps) {
+export default function JotsSummaryRenderer({
+  summary,
+}: JotsSummaryRendererProps) {
   // Parse mainContent JSON
   let parsedContent: any = { sections: [], researchSources: [] };
   try {
@@ -26,13 +28,13 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
       parsedContent = JSON.parse(summary.mainContent);
     }
   } catch (e) {
-    console.error('Failed to parse mainContent:', e);
+    console.error("Failed to parse mainContent:", e);
   }
 
-  const bookTitle = summary.bookTitle || 'Untitled';
-  const bookAuthor = summary.bookAuthor || 'Unknown Author';
-  const introduction = summary.introduction || '';
-  const onePageSummary = summary.onePageSummary || '';
+  const bookTitle = summary.bookTitle || "Untitled";
+  const bookAuthor = summary.bookAuthor || "Unknown Author";
+  const introduction = summary.introduction || "";
+  const onePageSummary = summary.onePageSummary || "";
   const sections = parsedContent.sections || [];
   const researchSources = parsedContent.researchSources || [];
 
@@ -40,24 +42,33 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
   const renderFormattedText = (text: string) => {
     // Split by bold markers (**text**)
     const parts = text.split(/(\*\*.*?\*\*)/g);
-    
+
     return parts.map((part: string, i: number) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
+      if (part.startsWith("**") && part.endsWith("**")) {
         const innerText = part.slice(2, -2);
         // Check for italic within bold
-        if (innerText.includes('*')) {
+        if (innerText.includes("*")) {
           const italicParts = innerText.split(/(\*.*?\*)/g);
           return (
             <strong key={i}>
-              {italicParts.map((ip: string, j: number) => 
-                ip.startsWith('*') && ip.endsWith('*') && !ip.startsWith('**') ? 
-                  <em key={j}>{ip.slice(1, -1)}</em> : ip
+              {italicParts.map((ip: string, j: number) =>
+                ip.startsWith("*") &&
+                ip.endsWith("*") &&
+                !ip.startsWith("**") ? (
+                  <em key={j}>{ip.slice(1, -1)}</em>
+                ) : (
+                  ip
+                )
               )}
             </strong>
           );
         }
         return <strong key={i}>{innerText}</strong>;
-      } else if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) {
+      } else if (
+        part.startsWith("*") &&
+        part.endsWith("*") &&
+        !part.startsWith("**")
+      ) {
         return <em key={i}>{part.slice(1, -1)}</em>;
       }
       return part;
@@ -78,16 +89,19 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
     return (
       <div className="my-6 p-5 bg-gray-100 border border-gray-300 rounded-md">
         <p className="text-sm leading-relaxed text-gray-800">
-          <span className="font-semibold text-blue-700">(Jonathan's Jots note:</span>{' '}
+          <span className="font-semibold text-blue-700">
+            (Jonathan's Jots note:
+          </span>{" "}
           {renderFormattedText(note.content)}
           {note.sources && note.sources.length > 0 && (
             <span>
-              {" "}According to{" "}
+              {" "}
+              According to{" "}
               {note.sources.map((source: any, i: number) => (
                 <span key={i}>
-                  <a 
-                    href={source.url} 
-                    target="_blank" 
+                  <a
+                    href={source.url}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 underline hover:text-blue-800"
                   >
@@ -117,22 +131,24 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
             <h2 className="text-lg sm:text-xl lg:text-2xl text-gray-600 mb-6 sm:mb-8">
               Original book by {bookAuthor}
             </h2>
-            
+
             {/* Introduction paragraphs on cover */}
             {introduction && (
               <div className="text-base sm:text-lg text-gray-700 space-y-4">
-                {introduction.split('\n\n').map((para: string, i: number) => (
-                  <p key={i} className="leading-relaxed">{renderFormattedText(para)}</p>
+                {introduction.split("\n\n").map((para: string, i: number) => (
+                  <p key={i} className="leading-relaxed">
+                    {renderFormattedText(para)}
+                  </p>
                 ))}
               </div>
             )}
           </div>
-          
+
           {/* Logo watermark */}
           <div className="flex justify-end mt-8">
-            <img 
-              src="/jonathansjots-logo.svg" 
-              alt="Jonathan's Jots" 
+            <img
+              src="/jonathansjots-logo.svg"
+              alt="Jonathan's Jots"
               className="w-16 h-16 sm:w-20 sm:h-20 opacity-40"
             />
           </div>
@@ -151,8 +167,10 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
                 </h2>
               </div>
               <div className="text-base sm:text-lg text-gray-800 space-y-4">
-                {onePageSummary.split('\n\n').map((para: string, i: number) => (
-                  <p key={i} className="leading-relaxed">{renderFormattedText(para)}</p>
+                {onePageSummary.split("\n\n").map((para: string, i: number) => (
+                  <p key={i} className="leading-relaxed">
+                    {renderFormattedText(para)}
+                  </p>
                 ))}
               </div>
             </div>
@@ -173,32 +191,36 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
             </div>
 
             {/* Subsections */}
-            {section.subsections && section.subsections.map((subsection: any, subIndex: number) => (
-              <div key={subIndex} className="mb-8">
-                {/* Subsection Title */}
-                {subsection.title && (
-                  <h3 className="text-xl sm:text-2xl font-semibold text-[#2E4057] mb-4">
-                    {subsection.title}
-                  </h3>
-                )}
+            {section.subsections &&
+              section.subsections.map((subsection: any, subIndex: number) => (
+                <div key={subIndex} className="mb-8">
+                  {/* Subsection Title */}
+                  {subsection.title && (
+                    <h3 className="text-xl sm:text-2xl font-semibold text-[#2E4057] mb-4">
+                      {subsection.title}
+                    </h3>
+                  )}
 
-                {/* Subsection Content */}
-                {subsection.content && (
-                  <div className="text-base sm:text-lg text-gray-800 space-y-4">
-                    {subsection.content.split('\n\n').map((para: string, i: number) => (
-                      <p key={i} className="leading-relaxed">{renderFormattedText(para)}</p>
+                  {/* Subsection Content */}
+                  {subsection.content && (
+                    <div className="text-base sm:text-lg text-gray-800 space-y-4">
+                      {subsection.content
+                        .split("\n\n")
+                        .map((para: string, i: number) => (
+                          <p key={i} className="leading-relaxed">
+                            {renderFormattedText(para)}
+                          </p>
+                        ))}
+                    </div>
+                  )}
+
+                  {/* Jonathan's Jots Notes - GRAY BOXES */}
+                  {subsection.jotsNotes &&
+                    subsection.jotsNotes.map((note: any, noteIndex: number) => (
+                      <div key={noteIndex}>{renderJotsNote(note)}</div>
                     ))}
-                  </div>
-                )}
-
-                {/* Jonathan's Jots Notes - GRAY BOXES */}
-                {subsection.jotsNotes && subsection.jotsNotes.map((note: any, noteIndex: number) => (
-                  <div key={noteIndex}>
-                    {renderJotsNote(note)}
-                  </div>
-                ))}
-              </div>
-            ))}
+                </div>
+              ))}
 
             {/* Cognac Separator Bar after each section */}
             {sectionIndex < sections.length - 1 && (
@@ -219,12 +241,17 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
               </div>
               <div className="space-y-4">
                 {researchSources.map((source: any, i: number) => (
-                  <div key={i} className="p-4 bg-gray-50 rounded-md border border-gray-200">
+                  <div
+                    key={i}
+                    className="p-4 bg-gray-50 rounded-md border border-gray-200"
+                  >
                     <p className="font-semibold text-[#2E4057] text-lg">
                       {source.title}
                     </p>
                     <p className="text-gray-700 text-sm mt-1">
-                      by {source.author} {source.authorCredentials && `(${source.authorCredentials})`}
+                      by {source.author}{" "}
+                      {source.authorCredentials &&
+                        `(${source.authorCredentials})`}
                     </p>
                     {source.relevance && (
                       <p className="text-gray-600 text-sm mt-2 italic">

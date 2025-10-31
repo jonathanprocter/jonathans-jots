@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { trpc } from '@/lib/trpc';
+import { useEffect, useState } from "react";
+import { trpc } from "@/lib/trpc";
 import JotsSummaryRenderer from "./JotsSummaryRenderer";
-import { GeneratingLoader } from './GeneratingLoader';
-import { Button } from './ui/button';
-import { Progress } from './ui/progress';
+import { GeneratingLoader } from "./GeneratingLoader";
+import { Button } from "./ui/button";
+import { Progress } from "./ui/progress";
 
 interface LiveSummaryPreviewProps {
   summaryId: string;
@@ -11,9 +11,13 @@ interface LiveSummaryPreviewProps {
   onBack: () => void;
 }
 
-export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummaryPreviewProps) {
+export function LiveSummaryPreview({
+  summaryId,
+  onComplete,
+  onBack,
+}: LiveSummaryPreviewProps) {
   const [isGenerating, setIsGenerating] = useState(true);
-  
+
   // Poll for progress updates
   const { data: progress } = trpc.summaries.progress.useQuery(
     { summaryId },
@@ -33,16 +37,16 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
   );
 
   useEffect(() => {
-    if (summary?.status === 'completed') {
+    if (summary?.status === "completed") {
       setIsGenerating(false);
       onComplete();
-    } else if (summary?.status === 'failed') {
+    } else if (summary?.status === "failed") {
       setIsGenerating(false);
     }
   }, [summary?.status, onComplete]);
 
-  const progressPercentage = progress?.totalSections 
-    ? (progress.sectionsCompleted / progress.totalSections) * 100 
+  const progressPercentage = progress?.totalSections
+    ? (progress.sectionsCompleted / progress.totalSections) * 100
     : 0;
 
   return (
@@ -51,7 +55,11 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
       <div className="border-b-4 border-[#D4772E] bg-white sticky top-0 z-10 shadow-sm">
         <div className="container py-3 sm:py-4 px-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div className="flex items-center gap-4">
-            <Button onClick={onBack} variant="outline" className="text-sm sm:text-base">
+            <Button
+              onClick={onBack}
+              variant="outline"
+              className="text-sm sm:text-base"
+            >
               ← Back
             </Button>
             {isGenerating && (
@@ -59,7 +67,7 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
                 <div className="flex-1">
                   <div className="flex flex-col">
                     <span className="text-xs sm:text-sm font-medium text-[#2E4057]">
-                      {progress?.stage || 'Generating...'}
+                      {progress?.stage || "Generating..."}
                     </span>
                     {progress?.currentSection && (
                       <span className="text-xs text-gray-500">
@@ -72,7 +80,8 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
                   </div>
                 </div>
                 <span className="text-xs text-gray-500 whitespace-nowrap">
-                  {progress?.sectionsCompleted || 0} / {progress?.totalSections || 0}
+                  {progress?.sectionsCompleted || 0} /{" "}
+                  {progress?.totalSections || 0}
                 </span>
               </div>
             )}
@@ -82,7 +91,7 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
 
       {/* Content */}
       <div className="container py-4 sm:py-8 px-4">
-        {!summary || summary.status === 'generating' ? (
+        {!summary || summary.status === "generating" ? (
           <div>
             {progress?.partialContent ? (
               // Show partial content as it's being generated
@@ -90,14 +99,18 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
                 <JotsSummaryRenderer
                   summary={{
                     ...summary,
-                    bookTitle: progress.partialContent.bookTitle || 'Generating...',
-                    bookAuthor: progress.partialContent.bookAuthor || 'Generating...',
-                    introduction: progress.partialContent.introduction || '',
-                    onePageSummary: progress.partialContent.onePageSummary || '',
+                    bookTitle:
+                      progress.partialContent.bookTitle || "Generating...",
+                    bookAuthor:
+                      progress.partialContent.bookAuthor || "Generating...",
+                    introduction: progress.partialContent.introduction || "",
+                    onePageSummary:
+                      progress.partialContent.onePageSummary || "",
                     mainContent: JSON.stringify({
                       sections: progress.partialContent.sections || [],
-                      researchSources: progress.partialContent.researchSources || []
-                    })
+                      researchSources:
+                        progress.partialContent.researchSources || [],
+                    }),
                   }}
                 />
                 {/* Live generation indicator */}
@@ -107,18 +120,22 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
                     <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-[#2E4057] to-[#D4772E] text-white rounded-lg shadow-lg">
                       <div className="animate-spin h-5 w-5 border-3 border-white border-t-transparent rounded-full"></div>
                       <div className="text-left">
-                        <div className="font-semibold">Researching and writing...</div>
-                        <div className="text-xs opacity-90">Adding Jots Notes with external sources</div>
+                        <div className="font-semibold">
+                          Researching and writing...
+                        </div>
+                        <div className="text-xs opacity-90">
+                          Adding Jots Notes with external sources
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <GeneratingLoader stage={progress?.stage || 'Initializing...'} />
+              <GeneratingLoader stage={progress?.stage || "Initializing..."} />
             )}
           </div>
-        ) : summary.status === 'completed' ? (
+        ) : summary.status === "completed" ? (
           <JotsSummaryRenderer summary={summary} />
         ) : (
           <div className="text-center py-16">
@@ -130,4 +147,3 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
     </div>
   );
 }
-
