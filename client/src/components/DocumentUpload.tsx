@@ -62,27 +62,28 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
     setUploading(true);
 
     try {
-      // Read file as base64
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result as string;
-        const base64Data = base64.split(',')[1]; // Remove data:*/*;base64, prefix
+      // Read file as ArrayBuffer (more reliable than readAsDataURL)
+      const arrayBuffer = await file.arrayBuffer();
 
-        await uploadMutation.mutateAsync({
-          filename: file.name,
-          fileData: base64Data,
-          fileSize: file.size,
-        });
+      // Convert ArrayBuffer to base64
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Data = btoa(binary);
 
-        setUploading(false);
-      };
-      reader.onerror = () => {
-        toast.error('Failed to read file');
-        setUploading(false);
-      };
-      reader.readAsDataURL(file);
+      await uploadMutation.mutateAsync({
+        filename: file.name,
+        fileData: base64Data,
+        fileSize: file.size,
+      });
+
+      setUploading(false);
     } catch (error) {
-      toast.error('Failed to upload file');
+      console.error('File upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload file';
+      toast.error(errorMessage);
       setUploading(false);
     }
   };
