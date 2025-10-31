@@ -87,10 +87,10 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
     };
 
     return (
-      <div className="my-4 sm:my-6 p-4 sm:p-5 md:p-6 bg-gradient-to-br from-gray-50 to-gray-100 border-l-4 border-[#D4772E] rounded-md shadow-sm">
+      <div className="my-4 sm:my-6 p-4 sm:p-5 md:p-6 bg-gradient-to-br from-gray-50 to-gray-100 border-l-4 border-[var(--jots-accent-primary)] rounded-md shadow-sm">
         {note.type && (
           <div className="mb-2">
-            <span className="inline-block px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold text-[#2E4057] bg-white rounded-full border border-gray-300">
+            <span className="inline-block px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold text-[var(--jots-text-primary)] bg-white rounded-full border border-[var(--jots-border)]">
               {getNoteTypeLabel(note.type)}
             </span>
           </div>
@@ -106,7 +106,7 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
                     href={source.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#D4772E] underline hover:text-[#2E4057] font-medium transition-colors"
+                    className="text-[var(--jots-accent-primary)] underline hover:text-[var(--jots-accent-hover)] font-medium transition-colors"
                   >
                     {source.title}
                   </a>
@@ -125,12 +125,12 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
       {/* Content */}
       <div className="container py-3 sm:py-6 md:py-8 max-w-4xl px-3 sm:px-4 md:px-6">
         {/* Professional Cover Page - Mobile Optimized */}
-        <div className="bg-gradient-to-br from-white to-[#F4E4D7] p-4 sm:p-8 md:p-12 rounded-lg shadow-lg mb-6 sm:mb-10 md:mb-12 min-h-[280px] sm:min-h-[350px] md:min-h-[400px] flex flex-col justify-between">
+        <div className="bg-gradient-to-br from-white to-[#F1F5F9] p-4 sm:p-8 md:p-12 rounded-lg shadow-lg mb-6 sm:mb-10 md:mb-12 min-h-[280px] sm:min-h-[350px] md:min-h-[400px] flex flex-col justify-between border border-[var(--jots-border)]">
           <div className="flex-1 flex flex-col justify-center">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#2E4057] mb-2 sm:mb-3 md:mb-4 leading-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--jots-text-primary)] mb-2 sm:mb-3 md:mb-4 leading-tight">
               Summary of {bookTitle}
             </h1>
-            <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600 mb-4 sm:mb-6 md:mb-8">
+            <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl text-[var(--jots-text-secondary)] mb-4 sm:mb-6 md:mb-8">
               Original book by {bookAuthor}
             </h2>
 
@@ -154,15 +154,15 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
           </div>
         </div>
 
-        {/* Cognac Separator Bar */}
-        <div className="h-1 bg-[#D4772E] mb-6 sm:mb-10 md:mb-12"></div>
+        {/* Separator Bar */}
+        <div className="h-px bg-[var(--jots-border)] mb-6 sm:mb-10 md:mb-12"></div>
 
         {/* 1-Page Summary Section - Mobile Optimized */}
         {onePageSummary && (
           <>
             <div className="mb-6 sm:mb-10 md:mb-12">
-              <div className="border-l-4 border-[#D4772E] pl-4 sm:pl-6 mb-4 sm:mb-6">
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#2E4057]">
+              <div className="border-l-4 border-[var(--jots-accent-primary)] pl-4 sm:pl-6 mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[var(--jots-text-primary)]">
                   1-Page Summary
                 </h2>
               </div>
@@ -173,8 +173,8 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
               </div>
             </div>
 
-            {/* Cognac Separator Bar */}
-            <div className="h-1 bg-[#D4772E] mb-6 sm:mb-10 md:mb-12"></div>
+            {/* Separator Bar */}
+            <div className="h-px bg-[var(--jots-border)] mb-6 sm:mb-10 md:mb-12"></div>
           </>
         )}
 
@@ -182,8 +182,8 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
         {sections.map((section: any, sectionIndex: number) => (
           <div key={sectionIndex} className="mb-10 sm:mb-14 md:mb-16">
             {/* Section Title */}
-            <div className="border-l-4 border-[#D4772E] pl-4 sm:pl-6 mb-4 sm:mb-6">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#2E4057]">
+            <div className="border-l-4 border-[var(--jots-accent-primary)] pl-4 sm:pl-6 mb-4 sm:mb-6">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[var(--jots-text-primary)]">
                 {section.title}
               </h2>
             </div>
@@ -193,7 +193,7 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
               <div key={subIndex} className="mb-6 sm:mb-8">
                 {/* Subsection Title */}
                 {subsection.title && (
-                  <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-[#2E4057] mb-3 sm:mb-4">
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-[var(--jots-text-primary)] mb-3 sm:mb-4">
                     {subsection.title}
                   </h3>
                 )}
@@ -216,9 +216,9 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
               </div>
             ))}
 
-            {/* Cognac Separator Bar after each section */}
+            {/* Separator Bar after each section */}
             {sectionIndex < sections.length - 1 && (
-              <div className="h-1 bg-[#D4772E] mt-6 sm:mt-10 md:mt-12"></div>
+              <div className="h-px bg-[var(--jots-border)] mt-6 sm:mt-10 md:mt-12"></div>
             )}
           </div>
         ))}
@@ -226,17 +226,17 @@ export default function JotsSummaryRenderer({ summary }: JotsSummaryRendererProp
         {/* Research Sources Section - Mobile Optimized */}
         {researchSources && researchSources.length > 0 && (
           <>
-            <div className="h-1 bg-[#D4772E] mb-6 sm:mb-10 md:mb-12"></div>
+            <div className="h-px bg-[var(--jots-border)] mb-6 sm:mb-10 md:mb-12"></div>
             <div className="mb-10 sm:mb-12">
-              <div className="border-l-4 border-[#D4772E] pl-4 sm:pl-6 mb-4 sm:mb-6">
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#2E4057]">
+              <div className="border-l-4 border-[var(--jots-accent-primary)] pl-4 sm:pl-6 mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[var(--jots-text-primary)]">
                   Research Sources
                 </h2>
               </div>
               <div className="space-y-3 sm:space-y-4">
                 {researchSources.map((source: any, i: number) => (
-                  <div key={i} className="p-3 sm:p-4 md:p-5 bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                    <p className="font-semibold text-[#2E4057] text-base sm:text-lg">
+                  <div key={i} className="p-3 sm:p-4 md:p-5 bg-gradient-to-br from-white to-gray-50 rounded-lg border border-[var(--jots-border)] shadow-sm hover:shadow-md transition-shadow">
+                    <p className="font-semibold text-[var(--jots-text-primary)] text-base sm:text-lg">
                       {source.title}
                     </p>
                     <p className="text-gray-700 text-xs sm:text-sm mt-1">

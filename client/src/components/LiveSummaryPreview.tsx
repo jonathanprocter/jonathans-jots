@@ -48,7 +48,7 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
   return (
     <div className="min-h-screen bg-white">
       {/* Header - Mobile Optimized */}
-      <div className="border-b-4 border-[#D4772E] bg-white sticky top-0 z-10 shadow-sm">
+      <div className="border-b border-[var(--jots-border)] bg-white sticky top-0 z-10 shadow-sm">
         <div className="container py-2 sm:py-3 md:py-4 px-3 sm:px-4 flex flex-col gap-2 sm:gap-3">
           <div className="flex items-center justify-between">
             <Button
@@ -68,10 +68,10 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
             <div className="w-full">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm font-medium text-[#2E4057] truncate flex-1">
+                  <span className="text-xs sm:text-sm font-medium text-[var(--jots-text-primary)] truncate flex-1">
                     {progress?.stage || 'Generating...'}
                   </span>
-                  <span className="text-xs sm:text-sm text-[#D4772E] font-semibold ml-2">
+                  <span className="text-xs sm:text-sm text-[var(--jots-accent-primary)] font-semibold ml-2">
                     {Math.round(progressPercentage)}%
                   </span>
                 </div>
@@ -109,9 +109,9 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
                 />
                 {/* Live generation indicator - Mobile Optimized */}
                 <div className="mt-8 sm:mt-12 mb-6 sm:mb-8">
-                  <div className="h-1 bg-gradient-to-r from-transparent via-[#D4772E] to-transparent animate-pulse"></div>
+                  <div className="h-1 bg-gradient-to-r from-transparent via-[var(--jots-accent-primary)] to-transparent animate-pulse"></div>
                   <div className="text-center mt-6 sm:mt-8 px-3">
-                    <div className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-[#2E4057] to-[#D4772E] text-white rounded-lg shadow-lg max-w-full">
+                    <div className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-[var(--jots-accent-primary)] to-[var(--jots-accent-hover)] text-white rounded-lg shadow-lg max-w-full">
                       <div className="animate-spin h-4 w-4 sm:h-5 sm:w-5 border-2 sm:border-3 border-white border-t-transparent rounded-full flex-shrink-0"></div>
                       <div className="text-left">
                         <div className="font-semibold text-sm sm:text-base">Researching and writing...</div>

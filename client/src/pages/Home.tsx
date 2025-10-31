@@ -4,16 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { getLoginUrl } from '@/const';
 import { trpc } from '@/lib/trpc';
 import { DocumentUpload } from '@/components/DocumentUpload';
 import { JotsLogo } from '@/components/JotsLogo';
-import { GeneratingLoader } from '@/components/GeneratingLoader';
 import { LiveSummaryPreview } from '@/components/LiveSummaryPreview';
 import JotsSummaryRenderer from "@/components/JotsSummaryRenderer";
-import { FileText, Loader2, BookOpen, RefreshCw, Eye } from 'lucide-react';
+import { FileText, Loader2, BookOpen, Eye, Upload, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Home() {
@@ -45,12 +42,16 @@ export default function Home() {
 
   // Generate summary mutation
   const generateSummaryMutation = trpc.summaries.generate.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('Summary generation started!');
       utils.summaries.list.invalidate();
       setSelectedDocumentId(null);
       setBookTitle('');
       setBookAuthor('');
+      // Navigate to the newly created summary
+      if (data.summaryId) {
+        setViewingSummaryId(data.summaryId);
+      }
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to generate summary');
@@ -73,7 +74,7 @@ export default function Home() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge variant="default" className="bg-green-500">Completed</Badge>;
+        return <Badge className="bg-[var(--jots-accent-primary)]">Completed</Badge>;
       case 'processing':
       case 'generating':
         return <Badge variant="secondary">Processing...</Badge>;
@@ -86,8 +87,8 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[var(--jots-background)]">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--jots-accent-primary)]" />
       </div>
     );
   }
@@ -99,18 +100,17 @@ export default function Home() {
         <LiveSummaryPreview
           summaryId={viewingSummary.id}
           onComplete={() => {
-            // Refresh the summary data
             utils.summaries.get.invalidate({ summaryId: viewingSummary.id });
           }}
           onBack={() => setViewingSummaryId(null)}
         />
       );
     }
-    
+
     if (viewingSummary.status === 'completed') {
     return (
       <div>
-        <div className="border-b-4 border-[#D4772E] bg-white sticky top-0 z-10 shadow-sm">
+        <div className="border-b border-[var(--jots-border)] bg-white sticky top-0 z-10 shadow-sm">
           <div className="container py-4 flex items-center justify-between">
             <JotsLogo />
             <Button onClick={() => setViewingSummaryId(null)} variant="outline">
@@ -124,243 +124,279 @@ export default function Home() {
     }
   }
 
+  // Calculate stats
+  const completedDocuments = documents?.filter(d => d.status === 'completed').length || 0;
+  const completedSummaries = summaries?.filter(s => s.status === 'completed').length || 0;
+  const avgProcessingTime = '~3m'; // This could be calculated from actual data
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <header className="border-b-4 border-[#D4772E] bg-white shadow-sm">
+    <div className="min-h-screen flex flex-col bg-[var(--jots-background)]">
+      {/* Header */}
+      <header className="jots-header sticky top-0 z-50 shadow-sm">
         <div className="container py-3 sm:py-4 flex items-center justify-between">
           <JotsLogo />
           <div className="flex items-center gap-2 sm:gap-4">
-            <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">Jonathan's Jots</span>
+            <span className="text-xs sm:text-sm text-[var(--jots-text-secondary)] hidden sm:inline">
+              Jonathan's Jots
+            </span>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 container py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2">Jonathan's Jots</h1>
-            <p className="text-sm sm:text-base text-gray-600">
-              Upload documents and generate premium research-backed summaries with deep research
+      {/* Main Container */}
+      <main className="flex-1 container py-6 sm:py-8 md:py-12">
+        <div className="max-w-[1400px] mx-auto">
+          {/* Hero Section */}
+          <div className="mb-8 sm:mb-10 md:mb-12 text-center">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--jots-text-primary)] mb-3 sm:mb-4 tracking-tight">
+              Transform Documents into Insights
+            </h1>
+            <p className="text-base sm:text-lg text-[var(--jots-text-secondary)] max-w-2xl mx-auto">
+              Upload documents and generate premium research-backed summaries with deep analysis in minutes
             </p>
           </div>
 
-          <Tabs defaultValue="upload" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-2 h-auto p-2 bg-white border border-gray-200">
-              <TabsTrigger value="upload" className="py-3 px-4 text-sm sm:text-base">
-                Upload Document
-              </TabsTrigger>
-              <TabsTrigger value="documents" className="py-3 px-4 text-sm sm:text-base">
-                My Documents {documents && `(${documents.length})`}
-              </TabsTrigger>
-              <TabsTrigger value="summaries" className="py-3 px-4 text-sm sm:text-base">
-                My Summaries {summaries && `(${summaries.length})`}
-              </TabsTrigger>
-            </TabsList>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10 md:mb-12">
+            <Card className="hover:shadow-md transition-all">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-lg bg-[var(--jots-stat-1)] flex items-center justify-center flex-shrink-0">
+                    <FileText className="h-7 w-7 text-white" strokeWidth={2} />
+                  </div>
+                  <div>
+                    <h3 className="text-3xl font-bold text-[var(--jots-text-primary)] tracking-tight">
+                      {documentsLoading ? '...' : completedDocuments}
+                    </h3>
+                    <p className="text-sm font-medium text-[var(--jots-text-secondary)]">
+                      Documents Uploaded
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-            <TabsContent value="upload" className="space-y-4 sm:space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                <DocumentUpload
-                  onUploadSuccess={(docId) => {
-                    setSelectedDocumentId(docId);
-                    utils.documents.list.invalidate();
-                  }}
-                />
+            <Card className="hover:shadow-md transition-all">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-lg bg-[var(--jots-stat-2)] flex items-center justify-center flex-shrink-0">
+                    <BookOpen className="h-7 w-7 text-white" strokeWidth={2} />
+                  </div>
+                  <div>
+                    <h3 className="text-3xl font-bold text-[var(--jots-text-primary)] tracking-tight">
+                      {summariesLoading ? '...' : completedSummaries}
+                    </h3>
+                    <p className="text-sm font-medium text-[var(--jots-text-secondary)]">
+                      Summaries Created
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Generate Summary</CardTitle>
-                    <CardDescription>
-                      Select a processed document and provide book details to generate a summary
+            <Card className="hover:shadow-md transition-all">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-lg bg-[var(--jots-stat-3)] flex items-center justify-center flex-shrink-0">
+                    <Clock className="h-7 w-7 text-white" strokeWidth={2} />
+                  </div>
+                  <div>
+                    <h3 className="text-3xl font-bold text-[var(--jots-text-primary)] tracking-tight">
+                      {avgProcessingTime}
+                    </h3>
+                    <p className="text-sm font-medium text-[var(--jots-text-secondary)]">
+                      Avg. Processing Time
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Grid - Upload and Generate */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10 sm:mb-12">
+            <DocumentUpload
+              onUploadSuccess={(docId) => {
+                setSelectedDocumentId(docId);
+                utils.documents.list.invalidate();
+              }}
+            />
+
+            <Card className="hover:shadow-md transition-all">
+              <CardHeader className="border-b border-[var(--jots-border)] pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-lg bg-[var(--jots-background)] flex items-center justify-center flex-shrink-0">
+                    <BookOpen className="h-6 w-6 text-[var(--jots-accent-primary)]" strokeWidth={2} />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg sm:text-xl">Generate Summary</CardTitle>
+                    <CardDescription className="text-sm">
+                      Create your AI-powered summary
                     </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Select Document</Label>
-                      <select
-                        className="w-full p-2 border rounded-md"
-                        value={selectedDocumentId || ''}
-                        onChange={(e) => setSelectedDocumentId(e.target.value)}
-                        disabled={!documents || documents.length === 0}
-                      >
-                        <option value="">-- Select a document --</option>
-                        {documents
-                          ?.filter((doc) => doc.status === 'completed')
-                          .map((doc) => (
-                            <option key={doc.id} value={doc.id}>
-                              {doc.originalFilename}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="document-select" className="text-sm font-semibold">
+                    Select Document <span className="text-red-500">*</span>
+                  </Label>
+                  <select
+                    id="document-select"
+                    className="w-full p-3 border border-[var(--jots-border)] rounded-md bg-white text-[var(--jots-text-primary)] focus:ring-2 focus:ring-[var(--jots-accent-primary)] focus:border-transparent transition-all"
+                    value={selectedDocumentId || ''}
+                    onChange={(e) => setSelectedDocumentId(e.target.value)}
+                    disabled={!documents || documents.length === 0}
+                  >
+                    <option value="">-- Select a processed document --</option>
+                    {documents
+                      ?.filter((doc) => doc.status === 'completed')
+                      .map((doc) => (
+                        <option key={doc.id} value={doc.id}>
+                          {doc.originalFilename}
+                        </option>
+                      ))}
+                  </select>
+                </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="book-title">Book Title (Optional)</Label>
-                      <Input
-                        id="book-title"
-                        placeholder="e.g., The Antidote"
-                        value={bookTitle}
-                        onChange={(e) => setBookTitle(e.target.value)}
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <Label htmlFor="book-title" className="text-sm font-semibold">
+                    Book Title (Optional)
+                  </Label>
+                  <Input
+                    id="book-title"
+                    placeholder="e.g., The Antidote"
+                    value={bookTitle}
+                    onChange={(e) => setBookTitle(e.target.value)}
+                    className="focus:ring-2 focus:ring-[var(--jots-accent-primary)]"
+                  />
+                </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="book-author">Book Author (Optional)</Label>
-                      <Input
-                        id="book-author"
-                        placeholder="e.g., Oliver Burkeman"
-                        value={bookAuthor}
-                        onChange={(e) => setBookAuthor(e.target.value)}
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <Label htmlFor="book-author" className="text-sm font-semibold">
+                    Book Author (Optional)
+                  </Label>
+                  <Input
+                    id="book-author"
+                    placeholder="e.g., Oliver Burkeman"
+                    value={bookAuthor}
+                    onChange={(e) => setBookAuthor(e.target.value)}
+                    className="focus:ring-2 focus:ring-[var(--jots-accent-primary)]"
+                  />
+                </div>
 
-                    <Button
-                      onClick={handleGenerateSummary}
-                      disabled={!selectedDocumentId || generateSummaryMutation.isPending}
-                      className="w-full"
-                      size="lg"
-                    >
-                      {generateSummaryMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <BookOpen className="mr-2 h-4 w-4" />
-                          Generate Summary
-                        </>
-                      )}
-                    </Button>
+                <Button
+                  onClick={handleGenerateSummary}
+                  disabled={!selectedDocumentId || generateSummaryMutation.isPending}
+                  className="w-full bg-[var(--jots-accent-primary)] hover:bg-[var(--jots-accent-hover)] text-white font-semibold py-6 rounded-md transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                  size="lg"
+                >
+                  {generateSummaryMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <BookOpen className="mr-2 h-5 w-5" />
+                      Generate Summary
+                    </>
+                  )}
+                </Button>
 
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <p>• Summary generation takes 2-5 minutes</p>
-                      <p>• AI will research 5-10 related books and sources</p>
-                      <p>• Includes comparative analysis and expert insights</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="bg-[var(--jots-background)] rounded-md p-4 border border-[var(--jots-border)]">
+                  <ul className="space-y-2 text-xs sm:text-sm text-[var(--jots-text-secondary)]">
+                    <li className="flex items-start gap-2">
+                      <span className="text-[var(--jots-accent-primary)] font-bold mt-0.5">•</span>
+                      <span>Summary generation takes 2-5 minutes</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[var(--jots-accent-primary)] font-bold mt-0.5">•</span>
+                      <span>AI researches 5-10 related sources</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[var(--jots-accent-primary)] font-bold mt-0.5">•</span>
+                      <span>Includes comparative analysis & expert insights</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[var(--jots-accent-primary)] font-bold mt-0.5">•</span>
+                      <span>Export to PDF, Markdown, or DOCX</span>
+                    </li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent Summaries */}
+          <div className="mt-10 sm:mt-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl sm:text-3xl font-bold text-[var(--jots-text-primary)] tracking-tight">
+                Recent Summaries
+              </h2>
+            </div>
+
+            {summariesLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-[var(--jots-accent-primary)]" />
               </div>
-            </TabsContent>
-
-            <TabsContent value="documents">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Uploaded Documents</CardTitle>
-                  <CardDescription>View and manage your uploaded documents</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {documentsLoading ? (
-                    <div className="flex justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                    </div>
-                  ) : !documents || documents.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">
-                      No documents uploaded yet
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {documents.map((doc) => (
-                        <div
-                          key={doc.id}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                        >
-                          <div className="flex items-center gap-3">
-                            <FileText className="h-5 w-5 text-gray-500" />
-                            <div>
-                              <p className="font-medium">{doc.originalFilename}</p>
-                              <p className="text-sm text-gray-500">
-                                {doc.fileType.toUpperCase()} • {(doc.fileSize / 1024).toFixed(2)}{' '}
-                                KB
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {getStatusBadge(doc.status)}
-                            {doc.status === 'completed' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setSelectedDocumentId(doc.id)}
-                              >
-                                Use for Summary
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+            ) : !summaries || summaries.length === 0 ? (
+              <Card className="py-12">
+                <CardContent className="text-center">
+                  <BookOpen className="h-12 w-12 mx-auto mb-4 text-[var(--jots-accent-light)]" />
+                  <p className="text-[var(--jots-text-secondary)]">
+                    No summaries generated yet. Create your first summary above!
+                  </p>
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="summaries">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Generated Summaries</CardTitle>
-                  <CardDescription>View your Jonathan's Jots-style summaries</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {summariesLoading ? (
-                    <div className="flex justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                    </div>
-                  ) : !summaries || summaries.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">
-                      No summaries generated yet
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {summaries.map((summary) => (
-                        <div
-                          key={summary.id}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                        >
-                          <div className="flex items-center gap-3">
-                            <BookOpen className="h-5 w-5 text-[#D4772E]" />
-                            <div>
-                              <p className="font-medium">
-                                {summary.bookTitle || 'Untitled Summary'}
-                              </p>
-                              <p className="text-sm text-gray-500">
-                                {summary.bookAuthor || 'Unknown Author'} •{' '}
-                                {summary.researchSourcesCount || 0} sources cited
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {getStatusBadge(summary.status)}
-                            {summary.status === 'generating' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled
-                              >
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Generating...
-                              </Button>
-                            )}
-                            {summary.status === 'completed' && (
-                              <Button
-                                size="sm"
-                                onClick={() => setViewingSummaryId(summary.id)}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Summary
-                              </Button>
-                            )}
-                          </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                {summaries.map((summary) => (
+                  <Card
+                    key={summary.id}
+                    className="hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer"
+                    onClick={() => summary.status === 'completed' && setViewingSummaryId(summary.id)}
+                  >
+                    <CardContent className="pt-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="w-11 h-11 rounded-lg bg-[var(--jots-accent-primary)] flex items-center justify-center flex-shrink-0">
+                          <BookOpen className="h-5 w-5 text-white" strokeWidth={2} />
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                        <span className="text-xs font-medium text-[var(--jots-accent-light)]">
+                          {new Date(summary.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <h3 className="font-semibold text-base text-[var(--jots-text-primary)] mb-1 tracking-tight">
+                        {summary.bookTitle || 'Untitled Summary'}
+                      </h3>
+                      <p className="text-sm text-[var(--jots-text-secondary)] mb-4">
+                        {summary.bookAuthor || 'Unknown Author'}
+                      </p>
+                      <div className="flex items-center gap-3 pt-4 border-t border-[var(--jots-border)] flex-wrap">
+                        <div className="flex items-center gap-1.5 text-xs text-[var(--jots-text-secondary)]">
+                          <FileText className="h-3.5 w-3.5 text-[var(--jots-accent-light)]" strokeWidth={2} />
+                          <span>20+ pages</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-[var(--jots-text-secondary)]">
+                          <Clock className="h-3.5 w-3.5 text-[var(--jots-accent-light)]" strokeWidth={2} />
+                          <span>15 min read</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-[var(--jots-text-secondary)]">
+                          <BookOpen className="h-3.5 w-3.5 text-[var(--jots-accent-light)]" strokeWidth={2} />
+                          <span>{summary.researchSourcesCount || 0} sources</span>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        {getStatusBadge(summary.status)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>
   );
 }
-
