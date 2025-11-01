@@ -1,8 +1,12 @@
 import { invokeLLM as invokeLLMWithRouting } from './_core/llm';
 import { generateShortformPrompt } from './shortformPrompt';
-import { getDb } from './db';
-import { documents, summaries } from '../drizzle/schema';
-import { eq } from 'drizzle-orm';
+import {
+  getDocument,
+  updateSummary,
+  deleteResearchSourcesBySummaryId,
+  createResearchSource,
+} from './db';
+import { nanoid } from 'nanoid';
 
 interface ProgressUpdate {
   stage: string;
@@ -25,16 +29,13 @@ export async function generateSummaryWithProgress(
   bookAuthor?: string
 ): Promise<void> {
   try {
-    const db = await getDb();
-    if (!db) throw new Error('Database not available');
-
     progressStore.set(summaryId, {
       stage: 'Extracting document content...',
       sectionsCompleted: 0,
       totalSections: 0,
     });
 
-    const [doc] = await db.select().from(documents).where(eq(documents.id, documentId)).limit(1);
+    const doc = await getDocument(documentId);
     if (!doc || !doc.extractedText) {
       throw new Error('Document not found or not processed');
     }
@@ -102,23 +103,42 @@ export async function generateSummaryWithProgress(
           onePageSummary: summaryData.onePageSummary,
           introduction: summaryData.introduction,
           sections: summaryData.sections.slice(0, i + 1),
+          researchSources: summaryData.researchSources || [],
         },
       });
     }
 
-    await db
-      .update(summaries)
-      .set({
-        bookTitle: summaryData.bookTitle || bookTitle || 'Untitled',
-        bookAuthor: summaryData.bookAuthor || bookAuthor || 'Unknown Author',
-        onePageSummary: summaryData.onePageSummary || '',
-        introduction: summaryData.introduction || '',
-        mainContent: JSON.stringify(summaryData.sections || []),
-        researchSourcesCount: summaryData.researchSources?.length || 0,
-        jotsNotesCount: countJotsNotes(summaryData.sections || []),
-        status: 'completed',
-      })
-      .where(eq(summaries.id, summaryId));
+    const sections = Array.isArray(summaryData.sections) ? summaryData.sections : [];
+    const researchSources = Array.isArray(summaryData.researchSources) ? summaryData.researchSources : [];
+
+    await updateSummary(summaryId, {
+      bookTitle: summaryData.bookTitle || bookTitle || 'Untitled',
+      bookAuthor: summaryData.bookAuthor || bookAuthor || 'Unknown Author',
+      onePageSummary: summaryData.onePageSummary || '',
+      introduction: summaryData.introduction || '',
+      mainContent: JSON.stringify({
+        sections,
+        researchSources,
+      }),
+      researchSourcesCount: researchSources.length,
+      jotsNotesCount: countJotsNotes(sections),
+      status: 'completed',
+      errorMessage: null,
+    });
+
+    await deleteResearchSourcesBySummaryId(summaryId);
+    if (researchSources.length > 0) {
+      for (const source of researchSources) {
+        await createResearchSource({
+          id: nanoid(),
+          summaryId,
+          sourceType: 'book',
+          bookTitle: source.title ?? null,
+          authorName: [source.author, source.authorCredentials].filter(Boolean).join(' — ') || null,
+          description: source.relevance ?? null,
+        });
+      }
+    }
 
     progressStore.set(summaryId, {
       stage: 'Complete!',
@@ -139,25 +159,22 @@ export async function generateSummaryWithProgress(
       totalSections: 0,
     });
     
-    const db = await getDb();
-    if (db) {
-      await db
-        .update(summaries)
-        .set({ status: 'failed' })
-        .where(eq(summaries.id, summaryId));
-    }
+    await updateSummary(summaryId, {
+      status: 'failed',
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+    }).catch(err => {
+      console.error('Failed to update summary status after error:', err);
+    });
   }
 }
 
 function countJotsNotes(sections: any[]): number {
   let count = 0;
   for (const section of sections) {
-    if (section.content) {
-      for (const item of section.content) {
-        if (item.type === 'shortform_note') {
-          count++;
-        }
-      }
+    const subsections = Array.isArray(section?.subsections) ? section.subsections : [];
+    for (const subsection of subsections) {
+      const notes = Array.isArray(subsection?.jotsNotes) ? subsection.jotsNotes : [];
+      count += notes.length;
     }
   }
   return count;

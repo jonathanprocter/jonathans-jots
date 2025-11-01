@@ -1,22 +1,35 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { 
-  InsertUser, 
-  users, 
-  documents, 
-  summaries, 
+import {
+  InsertUser,
+  users,
+  documents,
+  summaries,
   researchSources,
   InsertDocument,
   InsertSummary,
   InsertResearchSource,
   Document,
-  Summary
+  Summary,
+  ResearchSource,
+  User
 } from "../drizzle/schema";
 
 // Re-export types for use in other modules
 export type { Document, Summary };
 import { ENV } from './_core/env';
+
+const useMemoryStore = !process.env.DATABASE_URL;
+
+type MutableDocument = Document & { updatedAt?: Date | null };
+type MutableSummary = Summary & { updatedAt?: Date | null };
+type MutableResearchSource = ResearchSource;
+
+const memoryUsers = new Map<string, User>();
+const memoryDocuments = new Map<string, MutableDocument>();
+const memorySummaries = new Map<string, MutableSummary>();
+const memoryResearchSources = new Map<string, MutableResearchSource>();
 
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: Pool | null = null;
@@ -35,6 +48,14 @@ function getPoolConfig() {
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
+  if (useMemoryStore) {
+    if (!process.env.__MEMORY_DB_LOGGED) {
+      console.log("[Database] Running in in-memory mode (DATABASE_URL not provided)");
+      process.env.__MEMORY_DB_LOGGED = "true";
+    }
+    return null;
+  }
+
   if (!_db && process.env.DATABASE_URL) {
     try {
       if (!_pool) {
@@ -70,7 +91,21 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 
   const db = await getDb();
-  if (!db) {
+  if (!db && useMemoryStore) {
+    const existing = memoryUsers.get(user.id);
+    const now = new Date();
+    const stored: User = {
+      id: user.id,
+      name: user.name ?? existing?.name ?? null,
+      email: user.email ?? existing?.email ?? null,
+      loginMethod: user.loginMethod ?? existing?.loginMethod ?? null,
+      role: user.role ?? existing?.role ?? (user.id === ENV.ownerId ? "admin" : "user"),
+      createdAt: existing?.createdAt ?? now,
+      lastSignedIn: user.lastSignedIn ?? existing?.lastSignedIn ?? now,
+    };
+    memoryUsers.set(user.id, stored);
+    return;
+  } else if (!db) {
     console.warn("[Database] Cannot upsert user: database not available");
     return;
   }
@@ -124,6 +159,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 export async function getUser(id: string) {
   const db = await getDb();
   if (!db) {
+    if (useMemoryStore) {
+      return memoryUsers.get(id);
+    }
     console.warn("[Database] Cannot get user: database not available");
     return undefined;
   }
@@ -138,7 +176,32 @@ export async function getUser(id: string) {
 export async function createDocument(doc: InsertDocument): Promise<Document> {
   const db = await getDb();
   if (!db) {
-    throw new Error("Database not available");
+    if (!useMemoryStore) {
+      throw new Error("Database not available");
+    }
+
+    if (!doc.id) {
+      throw new Error("Document ID is required");
+    }
+
+    const now = new Date();
+    const stored: MutableDocument = {
+      id: doc.id,
+      userId: doc.userId!,
+      originalFilename: doc.originalFilename!,
+      fileType: doc.fileType!,
+      fileSize: doc.fileSize!,
+      storageKey: doc.storageKey!,
+      storageUrl: doc.storageUrl!,
+      extractedText: doc.extractedText ?? null,
+      status: doc.status ?? "uploaded",
+      errorMessage: doc.errorMessage ?? null,
+      createdAt: doc.createdAt ?? now,
+      updatedAt: doc.updatedAt ?? now,
+    };
+
+    memoryDocuments.set(doc.id, stored);
+    return stored;
   }
 
   await db.insert(documents).values(doc);
@@ -149,6 +212,9 @@ export async function createDocument(doc: InsertDocument): Promise<Document> {
 export async function getDocument(id: string): Promise<Document | undefined> {
   const db = await getDb();
   if (!db) {
+    if (useMemoryStore) {
+      return memoryDocuments.get(id);
+    }
     return undefined;
   }
 
@@ -159,6 +225,9 @@ export async function getDocument(id: string): Promise<Document | undefined> {
 export async function getUserDocuments(userId: string): Promise<Document[]> {
   const db = await getDb();
   if (!db) {
+    if (useMemoryStore) {
+      return Array.from(memoryDocuments.values()).filter(doc => doc.userId === userId);
+    }
     return [];
   }
 
@@ -166,13 +235,25 @@ export async function getUserDocuments(userId: string): Promise<Document[]> {
 }
 
 export async function updateDocumentStatus(
-  id: string, 
+  id: string,
   status: "uploaded" | "processing" | "completed" | "failed",
   extractedText?: string,
   errorMessage?: string
 ): Promise<void> {
   const db = await getDb();
   if (!db) {
+    if (useMemoryStore) {
+      const doc = memoryDocuments.get(id);
+      if (!doc) {
+        throw new Error("Document not found");
+      }
+      doc.status = status;
+      if (extractedText !== undefined) doc.extractedText = extractedText;
+      if (errorMessage !== undefined) doc.errorMessage = errorMessage;
+      doc.updatedAt = new Date();
+      memoryDocuments.set(id, doc);
+      return;
+    }
     throw new Error("Database not available");
   }
 
@@ -188,7 +269,34 @@ export async function updateDocumentStatus(
 export async function createSummary(summary: InsertSummary): Promise<Summary> {
   const db = await getDb();
   if (!db) {
-    throw new Error("Database not available");
+    if (!useMemoryStore) {
+      throw new Error("Database not available");
+    }
+
+    if (!summary.id) {
+      throw new Error("Summary ID is required");
+    }
+
+    const now = new Date();
+    const stored: MutableSummary = {
+      id: summary.id,
+      documentId: summary.documentId!,
+      userId: summary.userId!,
+      bookTitle: summary.bookTitle ?? null,
+      bookAuthor: summary.bookAuthor ?? null,
+      onePageSummary: summary.onePageSummary ?? null,
+      introduction: summary.introduction ?? null,
+      mainContent: summary.mainContent ?? null,
+      status: summary.status ?? "generating",
+      errorMessage: summary.errorMessage ?? null,
+      researchSourcesCount: summary.researchSourcesCount ?? 0,
+      jotsNotesCount: summary.jotsNotesCount ?? 0,
+      createdAt: summary.createdAt ?? now,
+      updatedAt: summary.updatedAt ?? now,
+    };
+
+    memorySummaries.set(summary.id, stored);
+    return stored;
   }
 
   await db.insert(summaries).values(summary);
@@ -199,6 +307,9 @@ export async function createSummary(summary: InsertSummary): Promise<Summary> {
 export async function getSummary(id: string): Promise<Summary | undefined> {
   const db = await getDb();
   if (!db) {
+    if (useMemoryStore) {
+      return memorySummaries.get(id);
+    }
     return undefined;
   }
 
@@ -209,6 +320,9 @@ export async function getSummary(id: string): Promise<Summary | undefined> {
 export async function getSummaryByDocumentId(documentId: string): Promise<Summary | undefined> {
   const db = await getDb();
   if (!db) {
+    if (useMemoryStore) {
+      return Array.from(memorySummaries.values()).find(summary => summary.documentId === documentId);
+    }
     return undefined;
   }
 
@@ -219,6 +333,9 @@ export async function getSummaryByDocumentId(documentId: string): Promise<Summar
 export async function getUserSummaries(userId: string): Promise<Summary[]> {
   const db = await getDb();
   if (!db) {
+    if (useMemoryStore) {
+      return Array.from(memorySummaries.values()).filter(summary => summary.userId === userId);
+    }
     return [];
   }
 
@@ -231,6 +348,21 @@ export async function updateSummary(
 ): Promise<void> {
   const db = await getDb();
   if (!db) {
+    if (useMemoryStore) {
+      const summary = memorySummaries.get(id);
+      if (!summary) {
+        throw new Error("Summary not found");
+      }
+
+      const updated: MutableSummary = {
+        ...summary,
+        ...updates,
+        updatedAt: new Date(),
+      };
+
+      memorySummaries.set(id, updated);
+      return;
+    }
     throw new Error("Database not available");
   }
 
@@ -242,6 +374,22 @@ export async function updateSummary(
 export async function createResearchSource(source: InsertResearchSource): Promise<void> {
   const db = await getDb();
   if (!db) {
+    if (useMemoryStore) {
+      if (!source.id) {
+        throw new Error("Research source ID is required");
+      }
+      const stored: MutableResearchSource = {
+        id: source.id,
+        summaryId: source.summaryId!,
+        sourceType: source.sourceType!,
+        bookTitle: source.bookTitle ?? null,
+        authorName: source.authorName ?? null,
+        description: source.description ?? null,
+        createdAt: source.createdAt ?? new Date(),
+      };
+      memoryResearchSources.set(source.id, stored);
+      return;
+    }
     throw new Error("Database not available");
   }
 
@@ -251,9 +399,31 @@ export async function createResearchSource(source: InsertResearchSource): Promis
 export async function getResearchSourcesBySummaryId(summaryId: string) {
   const db = await getDb();
   if (!db) {
+    if (useMemoryStore) {
+      return Array.from(memoryResearchSources.values()).filter(source => source.summaryId === summaryId);
+    }
     return [];
   }
 
   return await db.select().from(researchSources).where(eq(researchSources.summaryId, summaryId));
 }
+
+export async function deleteResearchSourcesBySummaryId(summaryId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    if (useMemoryStore) {
+      for (const [id, source] of memoryResearchSources.entries()) {
+        if (source.summaryId === summaryId) {
+          memoryResearchSources.delete(id);
+        }
+      }
+      return;
+    }
+    throw new Error("Database not available");
+  }
+
+  await db.delete(researchSources).where(eq(researchSources.summaryId, summaryId));
+}
+
+export const isUsingMemoryStore = useMemoryStore;
 
