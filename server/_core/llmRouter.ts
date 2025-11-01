@@ -10,17 +10,17 @@ import type { Message } from './llm.js';
 // Model configuration
 const MODELS = {
   // Claude 3.5 Sonnet - Best for long-form comprehensive summaries
-  CLAUDE_SONNET: 'claude-3-5-sonnet-20241022',
-  // GPT-4 Turbo - Fast and accurate for document processing
-  GPT4_TURBO: 'gpt-4-turbo-2024-04-09',
-  // GPT-4o - Latest OpenAI model with vision
-  GPT4O: 'gpt-4o-2024-11-20',
+  CLAUDE_SONNET: 'claude-3-5-sonnet-20240620',
+  // GPT-4 Turbo - Latest stable OpenAI model
+  GPT4_TURBO: 'gpt-4-turbo',
+  // GPT-4o - Fast and cost-efficient alternative
+  GPT4O: 'gpt-4o',
 };
 
 // Max tokens configuration
 const MAX_TOKENS = {
-  CLAUDE: 8192,  // Claude's maximum output
-  GPT4: 16384,   // GPT-4's maximum output
+  CLAUDE: 8192,  // Claude 3.5 Sonnet output limit for quality summaries
+  GPT4: 4096,    // GPT-4 Turbo maximum output
 };
 
 /**
@@ -79,8 +79,7 @@ const convertToAnthropicParams = (params: InvokeParams): LLMParams => {
   return {
     messages: params.messages,
     maxTokens: params.maxTokens || params.max_tokens || MAX_TOKENS.CLAUDE,
-    temperature: 0.7, // Good balance for creative yet accurate summaries
-    topP: 0.9,
+    temperature: 0.7,
   };
 };
 

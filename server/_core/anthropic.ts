@@ -32,8 +32,8 @@ const ENV = {
 };
 
 // Latest Claude model with best performance
-const CLAUDE_MODEL = 'claude-3-5-sonnet-20241022';
-const MAX_OUTPUT_TOKENS = 8192; // Claude's maximum output tokens
+const CLAUDE_MODEL = 'claude-3-5-sonnet-20240620';
+const MAX_OUTPUT_TOKENS = 8192; // Claude 3.5 Sonnet output limit for quality summaries
 const MAX_CONTEXT_TOKENS = 200000; // Claude's 200K context window
 
 /**
@@ -171,7 +171,6 @@ export const invokeAnthropic = async (params: LLMParams): Promise<LLMResponse> =
       messages,
       system,
       temperature: params.temperature ?? 0.7,
-      top_p: params.topP,
     });
   });
 
