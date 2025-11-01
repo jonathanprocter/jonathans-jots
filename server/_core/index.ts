@@ -83,14 +83,27 @@ function setupGracefulShutdown(server: ReturnType<typeof createServer>) {
 }
 
 async function startServer() {
+  // Log environment configuration on startup
+  console.log('\n=== Environment Configuration ===');
+  console.log('API Keys:');
+  console.log('  BUILT_IN_FORGE_API_KEY:', process.env.BUILT_IN_FORGE_API_KEY ? '✓ SET' : '✗ NOT SET');
+  console.log('  OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? '✓ SET' : '✗ NOT SET');
+  console.log('  ANTHROPIC_API_KEY:', process.env.ANTHROPIC_API_KEY ? '✓ SET' : '✗ NOT SET');
+  console.log('API URLs:');
+  console.log('  BUILT_IN_FORGE_API_URL:', process.env.BUILT_IN_FORGE_API_URL || '(not set)');
+  console.log('  OPENAI_API_URL:', process.env.OPENAI_API_URL || '(not set)');
+  console.log('  ANTHROPIC_BASE_URL:', process.env.ANTHROPIC_BASE_URL || '(not set)');
+  console.log('Model:', process.env.OPENAI_MODEL || 'manus-1.5 (default)');
+  console.log('================================\n');
+
   const app = express();
   const server = createServer(app);
-  
+
   // Health check endpoint
   app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
   });
-  
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

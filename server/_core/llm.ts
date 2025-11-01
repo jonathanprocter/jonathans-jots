@@ -216,8 +216,14 @@ const resolveApiUrl = () =>
 
 const assertApiKey = () => {
   if (!ENV.forgeApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
+    console.error('[LLM] API key not found. Checked environment variables:');
+    console.error('  - BUILT_IN_FORGE_API_KEY:', process.env.BUILT_IN_FORGE_API_KEY ? '✓ SET' : '✗ NOT SET');
+    console.error('  - OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? '✓ SET' : '✗ NOT SET');
+    console.error('  - ANTHROPIC_API_KEY:', process.env.ANTHROPIC_API_KEY ? '✓ SET' : '✗ NOT SET');
+    console.error('[LLM] Please set one of these environment variables in Replit Secrets or .env file');
+    throw new Error("API key is not configured. Please set OPENAI_API_KEY, ANTHROPIC_API_KEY, or BUILT_IN_FORGE_API_KEY in your environment variables.");
   }
+  console.log('[LLM] API key found, using endpoint:', resolveApiUrl());
 };
 
 /**
@@ -381,6 +387,8 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('[LLM] API request failed:', response.status, response.statusText);
+        console.error('[LLM] Error response:', errorText);
         throw new Error(
           `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
         );
