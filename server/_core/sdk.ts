@@ -4,6 +4,7 @@ import * as db from "../db";
 import { COOKIE_NAME } from "@shared/const";
 import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
+import type { User } from "../../drizzle/schema";
 
 class SDK {
   private sessionSecret: string;
@@ -25,12 +26,9 @@ class SDK {
 
   // OAuth methods disabled until ManusClient is available
   async exchangeCodeForToken(code: string, state: string): Promise<{ accessToken: string }> {
+    void code;
+    void state;
     this.throwOAuthNotConfigured();
-  async exchangeCodeForToken(
-    code: string,
-    state: string
-  ): Promise<{ accessToken: string }> {
-    throw new Error("OAuth not configured - ManusClient not available");
   }
 
   async getUserInfo(accessToken: string): Promise<{
@@ -40,19 +38,11 @@ class SDK {
     loginMethod?: string | null;
     platform?: string | null;
   }> {
+    void accessToken;
     this.throwOAuthNotConfigured();
-    name?: string;
-    email?: string;
-    loginMethod?: string;
-    platform?: string;
-  }> {
-    throw new Error("OAuth not configured - ManusClient not available");
   }
 
-  async createSessionToken(
-    openId: string,
-    options: { name: string; expiresInMs: number }
-  ): Promise<string> {
+  async createSessionToken(openId: string, options: { name: string; expiresInMs: number }): Promise<string> {
     const secretKey = this.getSessionSecret();
     const expirationSeconds = Math.floor(options.expiresInMs / 1000);
 
@@ -66,7 +56,7 @@ class SDK {
   }
 
   async verifySession(
-    cookieValue: string | undefined | null
+    cookieValue: string | undefined | null,
   ): Promise<{ openId: string; name: string } | null> {
     if (!cookieValue) {
       return null;
@@ -89,12 +79,15 @@ class SDK {
         name: typeof name === "string" ? name : "",
       };
     } catch (error) {
-      console.warn("[Auth] Session verification failed:", error instanceof Error ? error.message : "Unknown error");
+      console.warn(
+        "[Auth] Session verification failed:",
+        error instanceof Error ? error.message : "Unknown error",
+      );
       return null;
     }
   }
 
-  async authenticateRequest(req: Request) {
+  async authenticateRequest(req: Request): Promise<User | null> {
     const cookieValue = req.cookies?.[COOKIE_NAME];
     const session = await this.verifySession(cookieValue);
 
