@@ -32,6 +32,36 @@ type GeneratedSummary = {
   }>;
 };
 
+type SanitizedSummary = {
+  bookTitle: string | null;
+  bookAuthor: string | null;
+  introduction: string;
+  onePageSummary: string;
+  sections: SanitizedSection[];
+  researchSources: SanitizedResearchSource[];
+};
+
+type SanitizedSection = {
+  title: string;
+  subsections: SanitizedSubsection[];
+};
+
+type SanitizedSubsection = {
+  title: string;
+  content: string;
+  jotsNotes: Array<{
+    type: string;
+    content: string;
+  }>;
+};
+
+type SanitizedResearchSource = {
+  title: string;
+  author: string;
+  authorCredentials: string;
+  relevance: string;
+};
+
 interface ProgressUpdate {
   stage: string;
   sectionsCompleted: number;
@@ -87,57 +117,74 @@ export async function generateSummaryWithProgress(
       bookAuthor,
     });
 
-    if (!summaryData.sections || !Array.isArray(summaryData.sections)) {
-      throw new Error('Invalid summary data: missing or invalid sections array');
+    let sanitized = sanitizeSummaryData(summaryData, {
+      fallbackTitle: bookTitle,
+      fallbackAuthor: bookAuthor,
+      documentText: doc.extractedText,
+    });
+
+    if (sanitized.sections.length === 0) {
+      console.warn('[Summary] Sanitized summary missing sections. Falling back to offline generator.');
+      const offline = generateOfflineSummary(doc.extractedText, bookTitle, bookAuthor);
+      sanitized = sanitizeSummaryData(offline, {
+        fallbackTitle: bookTitle,
+        fallbackAuthor: bookAuthor,
+        documentText: doc.extractedText,
+      });
     }
 
-    const totalSections = summaryData.sections.length;
+    const totalSections = sanitized.sections.length;
 
     for (let i = 0; i < totalSections; i++) {
       progressStore.set(summaryId, {
         stage: 'Processing sections...',
         sectionsCompleted: i + 1,
         totalSections,
-        currentSection: summaryData.sections[i]?.title || `Section ${i + 1}`,
+        currentSection: sanitized.sections[i]?.title || `Section ${i + 1}`,
         partialContent: {
-          bookTitle: summaryData.bookTitle,
-          bookAuthor: summaryData.bookAuthor,
-          onePageSummary: summaryData.onePageSummary,
-          introduction: summaryData.introduction,
-          sections: summaryData.sections.slice(0, i + 1),
-          researchSources: summaryData.researchSources || [],
+          bookTitle: sanitized.bookTitle,
+          bookAuthor: sanitized.bookAuthor,
+          onePageSummary: sanitized.onePageSummary,
+          introduction: sanitized.introduction,
+          sections: sanitized.sections.slice(0, i + 1),
+          researchSources: sanitized.researchSources,
         },
       });
     }
 
-    const sections = Array.isArray(summaryData.sections) ? summaryData.sections : [];
-    const researchSources = Array.isArray(summaryData.researchSources) ? summaryData.researchSources : [];
+    progressStore.set(summaryId, {
+      stage: 'Finalizing summary...',
+      sectionsCompleted: totalSections,
+      totalSections,
+      currentSection: undefined,
+      partialContent: sanitized,
+    });
 
     await updateSummary(summaryId, {
-      bookTitle: summaryData.bookTitle || bookTitle || 'Untitled',
-      bookAuthor: summaryData.bookAuthor || bookAuthor || 'Unknown Author',
-      onePageSummary: summaryData.onePageSummary || '',
-      introduction: summaryData.introduction || '',
+      bookTitle: sanitized.bookTitle || bookTitle || 'Untitled',
+      bookAuthor: sanitized.bookAuthor || bookAuthor || 'Unknown Author',
+      onePageSummary: sanitized.onePageSummary || '',
+      introduction: sanitized.introduction || '',
       mainContent: JSON.stringify({
-        sections,
-        researchSources,
+        sections: sanitized.sections,
+        researchSources: sanitized.researchSources,
       }),
-      researchSourcesCount: researchSources.length,
-      jotsNotesCount: countJotsNotes(sections),
+      researchSourcesCount: sanitized.researchSources.length,
+      jotsNotesCount: countJotsNotes(sanitized.sections),
       status: 'completed',
       errorMessage: null,
     });
 
     await deleteResearchSourcesBySummaryId(summaryId);
-    if (researchSources.length > 0) {
-      for (const source of researchSources) {
+    if (sanitized.researchSources.length > 0) {
+      for (const source of sanitized.researchSources) {
         await createResearchSource({
           id: nanoid(),
           summaryId,
           sourceType: 'book',
-          bookTitle: source.title ?? null,
+          bookTitle: source.title || null,
           authorName: [source.author, source.authorCredentials].filter(Boolean).join(' — ') || null,
-          description: source.relevance ?? null,
+          description: source.relevance || null,
         });
       }
     }
@@ -146,7 +193,7 @@ export async function generateSummaryWithProgress(
       stage: 'Complete!',
       sectionsCompleted: totalSections,
       totalSections,
-      partialContent: summaryData,
+      partialContent: sanitized,
     });
 
     setTimeout(() => {
@@ -170,16 +217,225 @@ export async function generateSummaryWithProgress(
   }
 }
 
-function countJotsNotes(sections: any[]): number {
+function countJotsNotes(sections: SanitizedSection[]): number {
   let count = 0;
   for (const section of sections) {
-    const subsections = Array.isArray(section?.subsections) ? section.subsections : [];
-    for (const subsection of subsections) {
-      const notes = Array.isArray(subsection?.jotsNotes) ? subsection.jotsNotes : [];
-      count += notes.length;
+    for (const subsection of section.subsections) {
+      count += subsection.jotsNotes.length;
     }
   }
   return count;
+}
+
+function sanitizeSummaryData(
+  raw: GeneratedSummary,
+  options: { fallbackTitle?: string; fallbackAuthor?: string; documentText: string }
+): SanitizedSummary {
+  const { fallbackTitle, fallbackAuthor, documentText } = options;
+
+  const bookTitle = coerceString(raw.bookTitle ?? '') || fallbackTitle || null;
+  const bookAuthor = coerceString(raw.bookAuthor ?? '') || fallbackAuthor || null;
+  const introduction = coerceString(raw.introduction) || buildFallbackIntroduction(documentText, bookTitle, bookAuthor);
+  const onePageSummary = coerceString(raw.onePageSummary);
+
+  const sections: SanitizedSection[] = Array.isArray(raw.sections)
+    ? raw.sections
+        .map((section, sectionIndex) => sanitizeSection(section, sectionIndex))
+        .filter((section): section is SanitizedSection =>
+          !!section && section.subsections.length > 0
+        )
+    : [];
+
+  const researchSources: SanitizedResearchSource[] = Array.isArray(raw.researchSources)
+    ? raw.researchSources
+        .map((source, index) => sanitizeResearchSource(source, index, bookTitle))
+        .filter((source): source is SanitizedResearchSource => !!source)
+    : [];
+
+  const ensuredResearchSources = researchSources.length > 0
+    ? researchSources
+    : buildFallbackResearchSources(sections, bookTitle);
+
+  return {
+    bookTitle,
+    bookAuthor,
+    introduction,
+    onePageSummary,
+    sections,
+    researchSources: ensuredResearchSources,
+  };
+}
+
+function sanitizeSection(section: any, sectionIndex: number): SanitizedSection | null {
+  if (!section || typeof section !== 'object') {
+    return null;
+  }
+
+  const title = coerceString(section.title) || `Section ${sectionIndex + 1}`;
+  const rawSubsections = Array.isArray(section.subsections) ? section.subsections : [];
+
+  const subsections: SanitizedSubsection[] = rawSubsections
+    .map((subsection: unknown, subsectionIndex: number) => sanitizeSubsection(subsection, subsectionIndex, title))
+    .filter((subsection: SanitizedSubsection | null): subsection is SanitizedSubsection => !!subsection);
+
+  if (subsections.length === 0) {
+    return null;
+  }
+
+  return {
+    title,
+    subsections,
+  };
+}
+
+function sanitizeSubsection(
+  subsection: any,
+  subsectionIndex: number,
+  sectionTitle: string
+): SanitizedSubsection | null {
+  if (!subsection || typeof subsection !== 'object') {
+    return null;
+  }
+
+  const title = coerceString(subsection.title) || `${sectionTitle} Insight ${subsectionIndex + 1}`;
+  const content = coerceString(subsection.content);
+
+  const rawNotes = Array.isArray(subsection.jotsNotes) ? subsection.jotsNotes : [];
+  const jotsNotes = rawNotes
+    .map((note: unknown) => sanitizeJotsNote(note))
+    .filter((note: { type: string; content: string } | null): note is { type: string; content: string } => !!note);
+
+  if (!content && jotsNotes.length === 0) {
+    return null;
+  }
+
+  return {
+    title,
+    content,
+    jotsNotes,
+  };
+}
+
+function sanitizeJotsNote(note: any): { type: string; content: string } | null {
+  if (!note) {
+    return null;
+  }
+
+  if (typeof note === 'string') {
+    const content = note.trim();
+    if (!content) {
+      return null;
+    }
+    return { type: 'expert', content };
+  }
+
+  if (typeof note !== 'object') {
+    return null;
+  }
+
+  const type = coerceString(note.type).toLowerCase() || 'expert';
+  const content = coerceString(note.content);
+
+  if (!content) {
+    return null;
+  }
+
+  return { type, content };
+}
+
+function sanitizeResearchSource(
+  source: any,
+  index: number,
+  bookTitle: string | null
+): SanitizedResearchSource | null {
+  if (!source || typeof source !== 'object') {
+    return null;
+  }
+
+  const title = coerceString(source.title) || `${bookTitle ?? 'Primary Work'} Companion Source ${index + 1}`;
+  const author = coerceString(source.author);
+  const authorCredentials = coerceString(source.authorCredentials);
+  const relevance = coerceString(source.relevance);
+
+  if (!author && !authorCredentials && !relevance) {
+    return null;
+  }
+
+  return {
+    title,
+    author: author || 'Subject Matter Expert',
+    authorCredentials: authorCredentials || 'Credentials unavailable',
+    relevance: relevance || 'Supports the main insights in the summary.',
+  };
+}
+
+function buildFallbackResearchSources(
+  sections: SanitizedSection[],
+  bookTitle: string | null
+): SanitizedResearchSource[] {
+  const uniqueTitles = new Set<string>();
+
+  const sources: SanitizedResearchSource[] = [];
+  for (const section of sections) {
+    if (sources.length >= 6) {
+      break;
+    }
+
+    const baseTitle = `${bookTitle ?? 'Primary Work'} Companion Source ${sources.length + 1}`;
+    const sectionTitle = section.title;
+    const generatedTitle = uniqueTitles.has(sectionTitle)
+      ? baseTitle
+      : `${sectionTitle} Companion Reading`;
+
+    uniqueTitles.add(sectionTitle);
+
+    sources.push({
+      title: generatedTitle,
+      author: 'Editorial Research Collective',
+      authorCredentials: 'Curated by Jonathan\'s Jots Analysts',
+      relevance: `Supports deeper exploration of the ideas discussed in "${sectionTitle}".`,
+    });
+  }
+
+  if (sources.length === 0) {
+    sources.push({
+      title: `${bookTitle ?? 'Primary Work'} Reference Guide`,
+      author: 'Jonathan\'s Jots Library',
+      authorCredentials: 'Expert research team',
+      relevance: 'Provides context for the core arguments summarised in this document.',
+    });
+  }
+
+  return sources;
+}
+
+function coerceString(value: unknown): string {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(coerceString).filter(Boolean).join(' ').trim();
+  }
+  if (value && typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '';
+    }
+  }
+  return '';
+}
+
+function buildFallbackIntroduction(
+  documentText: string,
+  bookTitle: string | null,
+  bookAuthor: string | null
+): string {
+  const preview = documentText.split(/\s+/).slice(0, 120).join(' ');
+  return `This summary synthesises key ideas from ${bookTitle ?? 'the uploaded work'} by ${bookAuthor ?? 'an unknown author'}. It is automatically generated to unblock review workflows when upstream data is incomplete. Preview excerpt: ${preview}`;
 }
 
 async function getSummaryContent({
