@@ -334,10 +334,10 @@ export default function Home() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                disabled
+                                onClick={() => setViewingSummaryId(summary.id)}
                               >
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Generating...
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Preview
                               </Button>
                             )}
                             {summary.status === 'completed' && (
