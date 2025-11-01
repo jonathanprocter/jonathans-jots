@@ -310,12 +310,18 @@ function getMimeType(fileType: string): string {
 }
 
 /**
- * Safely parse JSON content from summary with error handling
+ * Ensure stored summary content is valid JSON before returning it to the client.
+ * The frontend expects a JSON string and handles parsing itself, so we simply
+ * validate the string here instead of returning the parsed object.
  */
-function parseSummaryContent(content: string | null): any {
-  if (!content) return null;
+function parseSummaryContent(content: string | null): string | null {
+  if (!content) {
+    return null;
+  }
+
   try {
-    return JSON.parse(content);
+    JSON.parse(content);
+    return content;
   } catch (error) {
     console.error('Failed to parse summary content:', error);
     return null;
