@@ -15,21 +15,7 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const uploadMutation = trpc.documents.upload.useMutation({
-    onSuccess: (data) => {
-      toast.success('Document uploaded successfully!');
-      setFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      onUploadSuccess?.(data.documentId);
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to upload document');
-      setUploading(false);
-    },
-  });
+  const utils = trpc.useUtils();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -62,27 +48,40 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
     setUploading(true);
 
     try {
-      // Read file as base64
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result as string;
-        const base64Data = base64.split(',')[1]; // Remove data:*/*;base64, prefix
+      const formData = new FormData();
+      formData.append('file', file);
 
-        await uploadMutation.mutateAsync({
-          filename: file.name,
-          fileData: base64Data,
-          fileSize: file.size,
-        });
+      const response = await fetch('/api/documents/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-        setUploading(false);
-      };
-      reader.onerror = () => {
-        toast.error('Failed to read file');
-        setUploading(false);
-      };
-      reader.readAsDataURL(file);
+      let result: any = null;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        if (!response.ok) {
+          throw new Error(`Upload failed with status ${response.status}`);
+        }
+        console.warn('Upload response parsing failed:', parseError);
+      }
+
+      if (!response.ok || !result?.success) {
+        const errorMessage = result?.error || 'Failed to upload document';
+        throw new Error(errorMessage);
+      }
+
+      toast.success('Document uploaded successfully!');
+      setFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      await utils.documents.list.invalidate();
+      onUploadSuccess?.(result.documentId);
     } catch (error) {
-      toast.error('Failed to upload file');
+      const message = error instanceof Error ? error.message : 'Failed to upload document';
+      toast.error(message);
+    } finally {
       setUploading(false);
     }
   };

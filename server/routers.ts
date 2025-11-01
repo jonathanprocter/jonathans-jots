@@ -3,25 +3,19 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { 
-  createDocument, 
-  getDocument, 
+import {
+  getDocument,
   getUserDocuments,
-  updateDocumentStatus,
   createSummary,
   getSummary,
   getSummaryByDocumentId,
   getUserSummaries,
   updateSummary,
-  createResearchSource,
   getResearchSourcesBySummaryId,
   Document,
-  Summary
+  Summary,
 } from "./db";
-import { storagePut } from "./storage";
-import { processDocument, getFileType, validateFileSize } from "./documentProcessor";
-import { generateShortformPrompt,  } from "./shortformPrompt";
-import { invokeLLM } from "./_core/llm";
+import { handleDocumentUpload, getMimeType } from "./documentUploadService";
 import { nanoid } from "nanoid";
 
 // Helper to count total jots notes across all sections
@@ -66,50 +60,22 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const { filename, fileData, fileSize } = input;
-        const userId = ctx.user?.id || 'anonymous';
+        const userId = ctx.user?.id || "anonymous";
 
-        // Validate file type
-        const fileType = getFileType(filename);
-        if (!fileType) {
-          throw new Error('Unsupported file type. Please upload .pdf, .docx, .txt, or .rtf files.');
-        }
+        const buffer = Buffer.from(fileData, "base64");
 
-        // Validate file size
-        if (!validateFileSize(fileSize)) {
-          throw new Error('File size exceeds 10MB limit.');
-        }
-
-        // Decode base64 file data
-        const buffer = Buffer.from(fileData, 'base64');
-
-        // Upload to S3
-        const storageKey = `documents/${userId}/${nanoid()}-${filename}`;
-        const { url: storageUrl } = await storagePut(storageKey, buffer, getMimeType(fileType));
-
-        // Create document record
-        const documentId = nanoid();
-        const document = await createDocument({
-          id: documentId,
-          userId,
-          originalFilename: filename,
-          fileType,
+        const result = await handleDocumentUpload({
+          filename,
           fileSize,
-          storageKey,
-          storageUrl,
-          status: 'uploaded',
-        });
-
-        // Process document asynchronously
-        processDocumentAsync(documentId, buffer, fileType).catch(error => {
-          console.error('Document processing failed:', error);
-          updateDocumentStatus(documentId, 'failed', undefined, error.message);
+          buffer,
+          userId,
         });
 
         return {
-          success: true,
-          documentId: document.id,
-          message: 'Document uploaded successfully. Processing has started.',
-        };
+          success: result.success,
+          documentId: result.documentId,
+          message: result.message,
+        } as const;
       }),
 
     // Get user's documents
@@ -343,31 +309,6 @@ function verifySummaryAccess(summary: Summary | undefined, userId: string): void
   }
   if (summary.userId !== userId) {
     throw new Error('Unauthorized access to summary');
-  }
-}
-
-/**
- * Process document asynchronously after upload
- */
-async function processDocumentAsync(
-  documentId: string,
-  buffer: Buffer,
-  fileType: 'pdf' | 'docx' | 'txt' | 'rtf'
-): Promise<void> {
-  try {
-    await updateDocumentStatus(documentId, 'processing');
-
-    const result = await processDocument(buffer, fileType);
-
-    if (!result.success) {
-      throw new Error(result.error || 'Document processing failed');
-    }
-
-    await updateDocumentStatus(documentId, 'completed', result.text);
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error processing document:', errorMessage);
-    throw error;
   }
 }
 
