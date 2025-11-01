@@ -93,7 +93,19 @@ async function startServer() {
   console.log('  BUILT_IN_FORGE_API_URL:', process.env.BUILT_IN_FORGE_API_URL || '(not set)');
   console.log('  OPENAI_API_URL:', process.env.OPENAI_API_URL || '(not set)');
   console.log('  ANTHROPIC_BASE_URL:', process.env.ANTHROPIC_BASE_URL || '(not set)');
-  console.log('Model:', process.env.OPENAI_MODEL || 'manus-1.5 (default)');
+
+  // Auto-detect default model based on which API key is set (matches llm.ts priority)
+  let defaultModel = 'gpt-4-turbo-preview';
+  let provider = 'OpenAI';
+  if (process.env.ANTHROPIC_API_KEY) {
+    defaultModel = 'claude-3-5-sonnet-20241022';
+    provider = 'Anthropic';
+  } else if (process.env.OPENAI_API_KEY) {
+    defaultModel = 'gpt-4-turbo-preview';
+    provider = 'OpenAI';
+  }
+  console.log('Model:', process.env.OPENAI_MODEL || `${defaultModel} (auto-detected)`);
+  console.log('Provider:', provider);
   console.log('================================\n');
 
   const app = express();
