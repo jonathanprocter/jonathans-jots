@@ -24,9 +24,12 @@ export interface ProcessedDocument {
  */
 async function extractPdfText(buffer: Buffer): Promise<string> {
   try {
+    console.log(`[PDF] Starting extraction, buffer size: ${buffer.length} bytes`);
     const data = await pdfParse(buffer);
+    console.log(`[PDF] Extraction successful, text length: ${data.text.length} chars`);
     return data.text;
   } catch (error) {
+    console.error('[PDF] Extraction failed:', error);
     throw new Error(`PDF extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -36,9 +39,12 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
  */
 async function extractDocxText(buffer: Buffer): Promise<string> {
   try {
+    console.log(`[DOCX] Starting extraction, buffer size: ${buffer.length} bytes`);
     const result = await mammoth.extractRawText({ buffer });
+    console.log(`[DOCX] Extraction successful, text length: ${result.value.length} chars`);
     return result.value;
   } catch (error) {
+    console.error('[DOCX] Extraction failed:', error);
     throw new Error(`DOCX extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -60,6 +66,7 @@ async function extractTxtText(buffer: Buffer): Promise<string> {
 async function extractRtfText(buffer: Buffer): Promise<string> {
   return new Promise((resolve, reject) => {
     try {
+      console.log(`[RTF] Starting extraction, buffer size: ${buffer.length} bytes`);
       const parser = new RtfParser();
       let text = '';
 
@@ -68,10 +75,12 @@ async function extractRtfText(buffer: Buffer): Promise<string> {
       });
 
       parser.on('end', () => {
+        console.log(`[RTF] Extraction successful, text length: ${text.length} chars`);
         resolve(text);
       });
 
       parser.on('error', (error: Error) => {
+        console.error('[RTF] Parser error:', error);
         reject(new Error(`RTF extraction failed: ${error.message}`));
       });
 
@@ -79,6 +88,7 @@ async function extractRtfText(buffer: Buffer): Promise<string> {
       const stream = Readable.from(buffer);
       stream.pipe(parser);
     } catch (error) {
+      console.error('[RTF] Extraction failed:', error);
       reject(new Error(`RTF extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`));
     }
   });
@@ -92,6 +102,13 @@ export async function processDocument(
   fileType: DocumentType
 ): Promise<ProcessedDocument> {
   try {
+    console.log(`[Processor] Processing ${fileType} document, buffer size: ${buffer.length} bytes`);
+    
+    // Validate buffer
+    if (!buffer || buffer.length === 0) {
+      throw new Error('Empty buffer provided for processing');
+    }
+
     let text: string;
 
     switch (fileType) {
@@ -111,10 +128,17 @@ export async function processDocument(
         throw new Error(`Unsupported file type: ${fileType}`);
     }
 
+    // Validate extracted text
+    if (!text || text.trim().length === 0) {
+      console.warn('[Processor] No text extracted from document');
+      throw new Error('No text could be extracted from the document. The file may be empty or corrupted.');
+    }
+
     // Clean up the text more efficiently
     text = cleanText(text);
 
     const wordCount = countWords(text);
+    console.log(`[Processor] Processing complete. Word count: ${wordCount}`);
 
     return {
       text,
@@ -122,6 +146,7 @@ export async function processDocument(
       success: true,
     };
   } catch (error) {
+    console.error('[Processor] Processing failed:', error);
     return {
       text: '',
       wordCount: 0,

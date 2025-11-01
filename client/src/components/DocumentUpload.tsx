@@ -18,15 +18,38 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
 
   const uploadMutation = trpc.documents.upload.useMutation({
     onSuccess: (data) => {
-      toast.success('Document uploaded successfully!');
+      toast.success('Document uploaded successfully!', {
+        description: 'Your document is now being processed. This may take 1-2 minutes.',
+      });
       setFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+      setUploading(false);
       onUploadSuccess?.(data.documentId);
     },
     onError: (error) => {
-      toast.error(error.message || 'Failed to upload document');
+      console.error('Upload error:', error);
+      const errorMessage = error.message || 'Failed to upload document';
+      
+      // Provide more specific error messages
+      if (errorMessage.includes('file type')) {
+        toast.error('Invalid file type', {
+          description: 'Please upload a PDF, DOCX, TXT, or RTF file.',
+        });
+      } else if (errorMessage.includes('size')) {
+        toast.error('File too large', {
+          description: 'Please upload a file smaller than 10MB.',
+        });
+      } else if (errorMessage.includes('base64') || errorMessage.includes('file data')) {
+        toast.error('File read error', {
+          description: 'Failed to read the file. Please try again.',
+        });
+      } else {
+        toast.error('Upload failed', {
+          description: errorMessage,
+        });
+      }
       setUploading(false);
     },
   });
@@ -65,24 +88,47 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
       // Read file as base64
       const reader = new FileReader();
       reader.onload = async () => {
-        const base64 = reader.result as string;
-        const base64Data = base64.split(',')[1]; // Remove data:*/*;base64, prefix
+        try {
+          const base64 = reader.result as string;
+          if (!base64 || base64.length === 0) {
+            throw new Error('Failed to read file data');
+          }
 
-        await uploadMutation.mutateAsync({
-          filename: file.name,
-          fileData: base64Data,
-          fileSize: file.size,
-        });
+          const base64Data = base64.split(',')[1]; // Remove data:*/*;base64, prefix
+          
+          if (!base64Data || base64Data.length === 0) {
+            throw new Error('Invalid file data format');
+          }
 
-        setUploading(false);
+          console.log(`Uploading file: ${file.name}, size: ${file.size} bytes, base64 length: ${base64Data.length}`);
+
+          await uploadMutation.mutateAsync({
+            filename: file.name,
+            fileData: base64Data,
+            fileSize: file.size,
+          });
+
+          // Note: setUploading(false) is now handled in onSuccess/onError
+        } catch (error) {
+          console.error('Upload error:', error);
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+          toast.error('Upload failed', {
+            description: errorMsg,
+          });
+          setUploading(false);
+        }
       };
-      reader.onerror = () => {
-        toast.error('Failed to read file');
+      reader.onerror = (error) => {
+        console.error('File reader error:', error);
+        toast.error('Failed to read file', {
+          description: 'There was an error reading the file. Please try again.',
+        });
         setUploading(false);
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      toast.error('Failed to upload file');
+      console.error('Upload preparation error:', error);
+      toast.error('Failed to prepare file for upload');
       setUploading(false);
     }
   };

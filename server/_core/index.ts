@@ -95,6 +95,36 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   
+  // Storage file serving endpoint
+  app.get('/api/storage/*', async (req, res) => {
+    try {
+      const { storageGetFile } = await import('../storage');
+      const key = req.params[0]; // Get everything after /api/storage/
+      
+      if (!key) {
+        return res.status(400).json({ error: 'Storage key is required' });
+      }
+      
+      const buffer = await storageGetFile(key);
+      
+      // Determine content type from file extension
+      const ext = key.split('.').pop()?.toLowerCase() || '';
+      const contentTypeMap: Record<string, string> = {
+        'pdf': 'application/pdf',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'txt': 'text/plain',
+        'rtf': 'application/rtf',
+      };
+      const contentType = contentTypeMap[ext] || 'application/octet-stream';
+      
+      res.set('Content-Type', contentType);
+      res.send(buffer);
+    } catch (error) {
+      console.error('Storage file serving error:', error);
+      res.status(404).json({ error: 'File not found' });
+    }
+  });
+  
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   

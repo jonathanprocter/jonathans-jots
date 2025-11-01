@@ -65,51 +65,93 @@ export const appRouter = router({
         fileSize: z.number(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const { filename, fileData, fileSize } = input;
-        const userId = ctx.user?.id || 'anonymous';
+        try {
+          const { filename, fileData, fileSize } = input;
+          const userId = ctx.user?.id || 'anonymous';
 
-        // Validate file type
-        const fileType = getFileType(filename);
-        if (!fileType) {
-          throw new Error('Unsupported file type. Please upload .pdf, .docx, .txt, or .rtf files.');
+          console.log(`[Upload] Starting upload for file: ${filename}, size: ${fileSize} bytes, user: ${userId}`);
+
+          // Validate file type
+          const fileType = getFileType(filename);
+          if (!fileType) {
+            console.error(`[Upload] Invalid file type: ${filename}`);
+            throw new Error('Unsupported file type. Please upload .pdf, .docx, .txt, or .rtf files.');
+          }
+
+          // Validate file size
+          if (!validateFileSize(fileSize)) {
+            console.error(`[Upload] File size exceeds limit: ${fileSize} bytes`);
+            throw new Error('File size exceeds 10MB limit.');
+          }
+
+          // Validate base64 data
+          if (!fileData || fileData.length === 0) {
+            console.error('[Upload] Empty file data received');
+            throw new Error('No file data received. Please try again.');
+          }
+
+          // Decode base64 file data
+          let buffer: Buffer;
+          try {
+            buffer = Buffer.from(fileData, 'base64');
+            console.log(`[Upload] Decoded buffer size: ${buffer.length} bytes`);
+            
+            // Verify decoded size matches expected size
+            if (Math.abs(buffer.length - fileSize) > fileSize * 0.1) {
+              console.warn(`[Upload] Size mismatch - expected: ${fileSize}, got: ${buffer.length}`);
+            }
+          } catch (decodeError) {
+            console.error('[Upload] Failed to decode base64 data:', decodeError);
+            throw new Error('Invalid file data format. Please try uploading again.');
+          }
+
+          // Upload to storage
+          const storageKey = `documents/${userId}/${nanoid()}-${filename}`;
+          console.log(`[Upload] Storing file with key: ${storageKey}`);
+          
+          let storageUrl: string;
+          try {
+            const result = await storagePut(storageKey, buffer, getMimeType(fileType));
+            storageUrl = result.url;
+            console.log(`[Upload] File stored successfully at: ${storageUrl}`);
+          } catch (storageError) {
+            console.error('[Upload] Storage failed:', storageError);
+            throw new Error('Failed to store file. Please try again.');
+          }
+
+          // Create document record
+          const documentId = nanoid();
+          console.log(`[Upload] Creating document record with ID: ${documentId}`);
+          
+          const document = await createDocument({
+            id: documentId,
+            userId,
+            originalFilename: filename,
+            fileType,
+            fileSize,
+            storageKey,
+            storageUrl,
+            status: 'uploaded',
+          });
+
+          console.log(`[Upload] Document record created successfully`);
+
+          // Process document asynchronously
+          processDocumentAsync(documentId, buffer, fileType).catch(error => {
+            console.error(`[Upload] Document processing failed for ${documentId}:`, error);
+            updateDocumentStatus(documentId, 'failed', undefined, error.message);
+          });
+
+          return {
+            success: true,
+            documentId: document.id,
+            message: 'Document uploaded successfully. Processing has started.',
+          };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          console.error('[Upload] Upload mutation failed:', errorMessage, error);
+          throw error;
         }
-
-        // Validate file size
-        if (!validateFileSize(fileSize)) {
-          throw new Error('File size exceeds 10MB limit.');
-        }
-
-        // Decode base64 file data
-        const buffer = Buffer.from(fileData, 'base64');
-
-        // Upload to S3
-        const storageKey = `documents/${userId}/${nanoid()}-${filename}`;
-        const { url: storageUrl } = await storagePut(storageKey, buffer, getMimeType(fileType));
-
-        // Create document record
-        const documentId = nanoid();
-        const document = await createDocument({
-          id: documentId,
-          userId,
-          originalFilename: filename,
-          fileType,
-          fileSize,
-          storageKey,
-          storageUrl,
-          status: 'uploaded',
-        });
-
-        // Process document asynchronously
-        processDocumentAsync(documentId, buffer, fileType).catch(error => {
-          console.error('Document processing failed:', error);
-          updateDocumentStatus(documentId, 'failed', undefined, error.message);
-        });
-
-        return {
-          success: true,
-          documentId: document.id,
-          message: 'Document uploaded successfully. Processing has started.',
-        };
       }),
 
     // Get user's documents
