@@ -209,10 +209,29 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-    : "https://forge.manus.im/v1/chat/completions";
+const resolveApiUrl = () => {
+  // Use explicitly configured URL if available
+  if (ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0) {
+    const url = ENV.forgeApiUrl.replace(/\/$/, "");
+    // If it's an Anthropic URL, don't add /v1/chat/completions
+    if (url.includes('anthropic.com')) {
+      return `${url}/v1/messages`;
+    }
+    return `${url}/v1/chat/completions`;
+  }
+
+  // Auto-detect based on which API key is set
+  if (process.env.ANTHROPIC_API_KEY) {
+    return "https://api.anthropic.com/v1/messages";
+  }
+
+  if (process.env.OPENAI_API_KEY) {
+    return "https://api.openai.com/v1/chat/completions";
+  }
+
+  // Last resort fallback
+  throw new Error("No API endpoint configured. Please set OPENAI_API_KEY or ANTHROPIC_API_KEY");
+};
 
 const assertApiKey = () => {
   if (!ENV.forgeApiKey) {
@@ -223,7 +242,11 @@ const assertApiKey = () => {
     console.error('[LLM] Please set one of these environment variables in Replit Secrets or .env file');
     throw new Error("API key is not configured. Please set OPENAI_API_KEY, ANTHROPIC_API_KEY, or BUILT_IN_FORGE_API_KEY in your environment variables.");
   }
-  console.log('[LLM] API key found, using endpoint:', resolveApiUrl());
+
+  const endpoint = resolveApiUrl();
+  const provider = endpoint.includes('anthropic.com') ? 'Anthropic Claude' :
+                   endpoint.includes('openai.com') ? 'OpenAI' : 'Custom';
+  console.log(`[LLM] ✓ API key found, using ${provider} endpoint: ${endpoint}`);
 };
 
 /**
@@ -332,8 +355,14 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   return withRetry(async () => {
+    // Auto-detect model based on which API is being used
+    let defaultModel = "gpt-4-turbo-preview";
+    if (process.env.ANTHROPIC_API_KEY && !process.env.OPENAI_API_KEY) {
+      defaultModel = "claude-3-5-sonnet-20241022";
+    }
+
     const payload: Record<string, unknown> = {
-      model: process.env.OPENAI_MODEL || "manus-1.5",
+      model: process.env.OPENAI_MODEL || defaultModel,
       messages: messages.map(normalizeMessage),
     };
 
@@ -374,14 +403,36 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     const timeout = parseInt(process.env.LLM_TIMEOUT || "60000", 10);
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+    const apiUrl = resolveApiUrl();
+    const isAnthropicApi = apiUrl.includes('anthropic.com');
+
+    // Build headers based on API provider
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+    };
+
+    if (isAnthropicApi) {
+      headers["x-api-key"] = ENV.forgeApiKey;
+      headers["anthropic-version"] = "2023-06-01";
+    } else {
+      headers["authorization"] = `Bearer ${ENV.forgeApiKey}`;
+    }
+
+    // Convert payload for Anthropic if needed
+    let requestPayload = payload;
+    if (isAnthropicApi) {
+      requestPayload = {
+        model: payload.model,
+        max_tokens: payload.max_tokens,
+        messages: payload.messages,
+      };
+    }
+
     try {
-      const response = await fetch(resolveApiUrl(), {
+      const response = await fetch(apiUrl, {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${ENV.forgeApiKey}`,
-        },
-        body: JSON.stringify(payload),
+        headers,
+        body: JSON.stringify(requestPayload),
         signal: controller.signal,
       });
 
@@ -394,7 +445,31 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
         );
       }
 
-      return (await response.json()) as InvokeResult;
+      const result = await response.json();
+
+      // Convert Anthropic response to OpenAI format if needed
+      if (isAnthropicApi) {
+        return {
+          id: result.id,
+          created: Date.now(),
+          model: result.model,
+          choices: [{
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: result.content[0]?.text || '',
+            },
+            finish_reason: result.stop_reason,
+          }],
+          usage: {
+            prompt_tokens: result.usage?.input_tokens || 0,
+            completion_tokens: result.usage?.output_tokens || 0,
+            total_tokens: (result.usage?.input_tokens || 0) + (result.usage?.output_tokens || 0),
+          },
+        } as InvokeResult;
+      }
+
+      return result as InvokeResult;
     } finally {
       clearTimeout(timeoutId);
     }
