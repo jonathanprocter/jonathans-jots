@@ -121,3 +121,51 @@ Preferred communication style: Simple, everyday language.
 - Vitest for testing framework
 - Prettier for code formatting
 - TypeScript compiler for type checking
+
+## Deployment Configuration
+
+**Current Status:** ✅ Ready for Production Deployment
+
+The application is configured for deployment on Replit using **Autoscale** deployment type, which is ideal for web applications with variable traffic.
+
+**Build Process:**
+- Frontend: Vite builds React application into optimized static assets (`dist/public/`)
+- Backend: ESBuild bundles Node.js server into single file (`dist/index.prod.js`)
+- Build command: `npm run build`
+- Production start command: `npm start`
+
+**Deployment Settings:**
+- **Deployment Type:** Autoscale (pay only when serving requests)
+- **Build Command:** `npm run build`
+- **Run Command:** `npm start`
+- **Port:** 5000 (configured in server)
+- **Node Version:** v20.19.3 (required for modern JavaScript features)
+
+**Production Entry Point:**
+- Uses `server/_core/index.prod.ts` (production-specific entry without Vite dev dependencies)
+- Serves pre-built static files from `dist/public/`
+- Includes graceful shutdown handlers
+- Environment-aware configuration
+
+**Environment Variables Required:**
+- `OPENAI_API_KEY` - For GPT-4 processing (currently set)
+- `ANTHROPIC_API_KEY` - For Claude 3.5 Sonnet summaries (currently set)
+- `DATABASE_URL` - PostgreSQL connection (auto-configured by Replit)
+- `NODE_ENV=production` - Automatically set in deployment
+
+**Pre-Deployment Checklist:**
+- ✅ Build process tested and working
+- ✅ Production server tested successfully
+- ✅ Node.js v20 installed and configured
+- ✅ API keys configured via Replit Secrets
+- ✅ Database schema initialized
+- ✅ Static file serving configured
+- ✅ Health check endpoint available at `/health`
+
+**To Deploy:**
+1. Click the "Publish" button at the top of Replit
+2. Select "Autoscale" deployment type
+3. Review deployment configuration (already set up)
+4. Click "Deploy"
+
+The deployment configuration is already saved in the project settings.

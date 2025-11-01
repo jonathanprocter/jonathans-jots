@@ -5,8 +5,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "PORT=5000 NODE_ENV=development node --import tsx server/_core/index.ts",
-    "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "start": "NODE_ENV=production node dist/index.js",
+    "build": "vite build && esbuild server/_core/index.prod.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "start": "NODE_ENV=production node dist/index.prod.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",

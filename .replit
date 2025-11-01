@@ -1,4 +1,14 @@
-modules = ["nodejs-20", "postgresql-16"]
+run = "npm install && npm run build && npm run start"
+modules = ["nodejs-20"]
+
+[env]
+PORT = "3000"
+NODE_ENV = "production"
+
+[deployment]
+run = ["npm", "start"]
+deploymentTarget = "autoscale"
+build = ["npm", "run", "build"]
 
 [agent]
 expertMode = true
@@ -68,12 +78,5 @@ localPort = 5010
 externalPort = 6800
 
 [[ports]]
-localPort = 39485
+localPort = 35351
 externalPort = 8000
-
-[[ports]]
-localPort = 5000
-externalPort = 80
-
-[nix]
-channel = "stable-25_05"
