@@ -6,13 +6,15 @@ import { sql } from "drizzle-orm";
  * This runs at server startup to ensure tables are created
  */
 export async function initializeDatabase() {
-  try {
-    console.log("[Database] Initializing database tables...");
+  console.log("[Database] Initializing database tables...");
 
-    const db = await getDb();
-    if (!db) {
-      throw new Error("Database not available");
-    }
+  const db = await getDb();
+  if (!db) {
+    console.log("[Database] Skipping table initialization – using in-memory data store.");
+    return;
+  }
+
+  try {
 
     // Create users table
     await db.execute(sql`

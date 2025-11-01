@@ -20,8 +20,6 @@ import {
 } from "./db";
 import { storagePut } from "./storage";
 import { processDocument, getFileType, validateFileSize } from "./documentProcessor";
-import { generateShortformPrompt,  } from "./shortformPrompt";
-import { invokeLLM } from "./_core/llm";
 import { nanoid } from "nanoid";
 
 // Helper to count total jots notes across all sections
