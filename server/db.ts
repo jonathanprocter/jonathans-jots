@@ -412,7 +412,7 @@ export async function deleteResearchSourcesBySummaryId(summaryId: string): Promi
   const db = await getDb();
   if (!db) {
     if (useMemoryStore) {
-      for (const [id, source] of memoryResearchSources.entries()) {
+      for (const [id, source] of Array.from(memoryResearchSources.entries())) {
         if (source.summaryId === summaryId) {
           memoryResearchSources.delete(id);
         }

@@ -1,4 +1,4 @@
-import { invokeLLM as invokeLLMWithRouting } from './_core/llm';
+import { invokeLLMWithRouting } from './_core/llmRouter';
 import { generateShortformPrompt } from './shortformPrompt';
 import {
   getDocument,
