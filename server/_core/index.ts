@@ -2,12 +2,15 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import multer from "multer";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { initializeDatabase } from "../initDb";
+import { handleDocumentUpload, MAX_UPLOAD_SIZE_BYTES } from "../documentUploadService";
+import { sdk } from "./sdk";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -85,6 +88,12 @@ function setupGracefulShutdown(server: ReturnType<typeof createServer>) {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: MAX_UPLOAD_SIZE_BYTES,
+    },
+  });
   
   // Health check endpoint
   app.get('/health', (req, res) => {
@@ -94,6 +103,49 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // Multipart document upload endpoint
+  app.post("/api/documents/upload", (req, res, next) => {
+    upload.single("file")(req, res, async err => {
+      if (err) {
+        return next(err);
+      }
+
+      try {
+        if (!req.file) {
+          return res.status(400).json({
+            success: false,
+            error: "Missing file upload. Ensure the 'file' field is included in the multipart request.",
+          });
+        }
+
+        const user = await sdk.authenticateRequest(req);
+        const userId = user?.id || "anonymous";
+
+        const result = await handleDocumentUpload({
+          filename: req.file.originalname,
+          buffer: req.file.buffer,
+          fileSize: req.file.size,
+          userId,
+        });
+
+        return res.status(200).json({
+          success: true,
+          documentId: result.documentId,
+          message: "Document uploaded successfully. Processing has started.",
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        console.error("[Upload] Failed to handle multipart request:", message);
+
+        const statusCode = /Unsupported file type|File size exceeds/.test(message) ? 400 : 500;
+        return res.status(statusCode).json({
+          success: false,
+          error: message,
+        });
+      }
+    });
+  });
   
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
@@ -113,6 +165,33 @@ async function startServer() {
   } else {
     serveStatic(app);
   }
+
+  // Global error handler for upload failures
+  app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (!err) {
+      return next();
+    }
+
+    if (err instanceof multer.MulterError) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).json({
+          success: false,
+          error: "File size exceeds 10MB limit.",
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+
+    console.error("[Server] Unhandled error:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Unexpected server error.",
+    });
+  });
 
   // Initialize database tables
   try {
