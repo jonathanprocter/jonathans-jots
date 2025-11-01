@@ -26,13 +26,15 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    host: true,
+    host: "0.0.0.0",
     allowedHosts: [
       ".manuspre.computer",
       ".manus.computer",
       ".manus-asia.computer",
       ".manuscomputer.ai",
       ".manusvm.computer",
+      ".replit.dev",
+      ".repl.co",
       "localhost",
       "127.0.0.1",
     ],
