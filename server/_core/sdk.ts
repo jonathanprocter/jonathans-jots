@@ -7,10 +7,16 @@ import { SignJWT, jwtVerify } from "jose";
 
 class SDK {
   private sessionSecret: string;
+  readonly oauthConfigured: boolean;
 
   constructor() {
     this.sessionSecret = process.env.SESSION_SECRET || "default-secret-change-in-production";
     console.log("[SDK] Initialized without OAuth (ManusClient not available)");
+    this.oauthConfigured = false;
+  }
+
+  private throwOAuthNotConfigured(): never {
+    throw new Error("OAuth not configured - ManusClient not available");
   }
 
   getSessionSecret(): Uint8Array {
@@ -18,6 +24,8 @@ class SDK {
   }
 
   // OAuth methods disabled until ManusClient is available
+  async exchangeCodeForToken(code: string, state: string): Promise<{ accessToken: string }> {
+    this.throwOAuthNotConfigured();
   async exchangeCodeForToken(
     code: string,
     state: string
@@ -27,6 +35,12 @@ class SDK {
 
   async getUserInfo(accessToken: string): Promise<{
     openId: string;
+    name?: string | null;
+    email?: string | null;
+    loginMethod?: string | null;
+    platform?: string | null;
+  }> {
+    this.throwOAuthNotConfigured();
     name?: string;
     email?: string;
     loginMethod?: string;

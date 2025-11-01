@@ -1,4 +1,4 @@
-import { getDb } from "./db";
+import { getDb, isUsingMemoryStore } from "./db";
 import { sql } from "drizzle-orm";
 
 /**
@@ -14,6 +14,15 @@ export async function initializeDatabase() {
     return;
   }
 
+    if (isUsingMemoryStore) {
+      console.log("[Database] Using in-memory store. Skipping table initialization.");
+      return;
+    }
+
+    const db = await getDb();
+    if (!db) {
+      throw new Error("Database not available");
+    }
   try {
 
     // Create users table

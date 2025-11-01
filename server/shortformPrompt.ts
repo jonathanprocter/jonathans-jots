@@ -1,46 +1,47 @@
 /**
  * Generate AI prompt for creating authentic Shortform-style summaries
- * CRITICAL: Must generate 10-14 PAGES of content to match real Shortform summaries
+ * tuned for high quality output that remains parseable within model limits.
  */
 
 export function generateShortformPrompt(documentText: string, bookTitle?: string, bookAuthor?: string): string {
-  return `You are an expert research analyst creating a premium Jonathan's Jots summary that EXCEEDS Shortform quality standards.
+  return `You are Jonathan's Jots, an editorial analyst who produces premium Shortform-style summaries that are concise, structured, and citation rich.
 
-CRITICAL REQUIREMENTS (ALL MANDATORY - NO SHORTCUTS):
-- 12-15 main sections with 3-5 subsections each (MINIMUM 40-60 total subsections)
-- 4-6 paragraphs per subsection (each paragraph 3-5 sentences, 60-80 words)
-- 2-3 Jonathan's Jots notes per subsection (EXACTLY 150-250 words each, in gray boxes)
-- 15-20 external book citations with COMPLETE author credentials (degrees, institutions, awards)
-- All 5 note types distributed evenly: comparative, context, critique, practical, expert
-- MINIMUM length: 8,000-12,000 words (10-14 pages) - LONGER IS BETTER
-- MAXIMUM depth: Use your full 8,192 token output capacity
-- COMPREHENSIVE coverage: Leave no important concept unexplored
+GOALS FOR THIS SUMMARY:
+- Deliver 6-8 main sections that cover the big ideas in a logical order.
+- Each section should contain 2-3 subsections with 2-3 paragraphs (80-150 words) that mix explanation, examples, and key takeaways.
+- Every subsection must include 1-2 Jonathan's Jots notes. Notes are 80-120 words and clearly labelled by type: comparative, context, critique, practical, or expert.
+- Provide 6-8 external book sources. Include author names and credentials (degrees, institutions, notable roles) and explain why each source matters.
+- Aim for 2,500-3,500 words so the summary is substantial but still readable in a single sitting.
+- Use accessible language that feels like an informed colleague walking the reader through the ideas.
 
-DOCUMENT TO SUMMARIZE:
-${documentText.slice(0, 50000)}
+DOCUMENT TO SUMMARIZE (truncate if needed to stay within context window):
+${documentText.slice(0, 40000)}
 
 ${bookTitle ? `BOOK TITLE: ${bookTitle}` : ''}
 ${bookAuthor ? `BOOK AUTHOR: ${bookAuthor}` : ''}
 
-CRITICAL OUTPUT INSTRUCTION: Return ONLY the JSON object below. Do not include any explanatory text before or after. Do not wrap in markdown code blocks. Start your response with { and end with }. No preamble, no postamble, just pure valid JSON.
+CRITICAL OUTPUT INSTRUCTION:
+- Respond with a single valid JSON object only (no markdown code fences, no commentary before or after).
+- Use double quotes around all property names and string values.
+- Escape any internal double quotes in the text content.
 
-OUTPUT FORMAT (JSON):
+OUTPUT FORMAT (JSON schema):
 {
-  "bookTitle": "string",
-  "bookAuthor": "string",
-  "introduction": "3-4 paragraphs (400-500 words) explaining core premise, context, and significance",
-  "onePageSummary": "5-6 paragraphs (600-800 words) covering ALL key themes with examples",
+  "bookTitle": "string | null",
+  "bookAuthor": "string | null",
+  "introduction": "2-3 paragraphs introducing the work, its context, and why it matters",
+  "onePageSummary": "4-5 paragraphs providing a narrative overview of every major theme",
   "sections": [
     {
-      "title": "Section 1: [Descriptive Title]",
+      "title": "Section 1: Descriptive Title",
       "subsections": [
         {
-          "title": "Subsection 1.1: [Specific Topic]",
-          "content": "4-6 detailed paragraphs (500-700 words). Each paragraph 3-5 sentences with examples and analysis.",
+          "title": "Subsection 1.1: Specific Topic",
+          "content": "Multiple paragraphs covering the idea in depth",
           "jotsNotes": [
             {
-              "type": "comparative",
-              "content": "150-250 words. MUST cite specific book title, author name, author credentials (degrees/position/institution), and concrete comparison with examples."
+              "type": "comparative | context | critique | practical | expert",
+              "content": "80-120 word insight that references at least one other source or practical application"
             }
           ]
         }
@@ -51,11 +52,11 @@ OUTPUT FORMAT (JSON):
     {
       "title": "Book Title",
       "author": "Author Name",
-      "authorCredentials": "Full credentials with degrees and institutions",
-      "relevance": "How this source relates to the main content"
+      "authorCredentials": "Credentials, degrees, or notable roles",
+      "relevance": "Why this source enriches the summary"
     }
   ]
 }
 
-Generate the complete JSON summary now.`;
+Return the JSON now.`;
 }
