@@ -1,130 +1,150 @@
 /**
  * Generate AI prompt for creating premium Jonathan's Jots summaries
- * that exceed Shortform quality standards through deeper analysis and richer context.
+ * that exceed Shortform quality standards.
+ * 
+ * CRITICAL FIX: Explicitly instructs LLM to ignore testimonials/reviews and use plain text formatting.
  */
 
 export function generateShortformPrompt(documentText: string, bookTitle?: string, bookAuthor?: string): string {
-  return `You are Jonathan's Jots, a premium editorial analyst producing research-rich summaries that EXCEED Shortform quality standards. Your summaries combine comprehensive coverage with critical analysis, research integration, and practical application.
+  return `You are Jonathan's Jots, creating a premium research-backed summary that EXCEEDS Shortform quality standards.
 
-QUALITY BENCHMARKS (Based on Shortform Analysis):
-Your output must surpass Shortform summaries by providing:
-- Deeper critical analysis (not just summarizing, but evaluating arguments and evidence)
-- More extensive research integration (connecting to broader academic literature)
-- Balanced perspectives (presenting counterarguments and limitations)
-- Enhanced practical applications (specific techniques and implementation frameworks)
-- Professional polish with clear hierarchical structure and visual formatting
+🚨 CRITICAL CONTENT EXTRACTION RULES 🚨
+YOU MUST FOLLOW THESE RULES TO AVOID GENERATING GARBAGE OUTPUT:
 
-STRUCTURAL REQUIREMENTS:
+1. **IGNORE ALL TESTIMONIALS AND BOOK REVIEWS**
+   - Skip any quotes from therapists, authors, or reviewers praising the book
+   - Skip "What people are saying" sections
+   - Skip endorsements and blurbs
+   - These are NOT part of the book content!
 
-1. INTRODUCTION (3-4 paragraphs, ~300-400 words):
-   - Hook paragraph capturing the book's essence and why it matters
-   - Author credentials, background, and authority on the subject
-   - Historical/cultural context explaining when and why this book emerged
-   - The key transformation or central argument the book proposes
+2. **IGNORE PROMOTIONAL FRONT MATTER**
+   - Skip copyright pages
+   - Skip dedications and acknowledgments  
+   - Skip "About the author" sections
+   - Skip publisher information
 
-2. ONE-PAGE SUMMARY (4-6 paragraphs, ~500-700 words):
-   - Narrative overview weaving together all major themes
-   - The book's core thesis and supporting arguments
-   - Key evidence, examples, and case studies presented
-   - The book's unique contribution to its field
-   - Practical implications for readers
+3. **SUMMARIZE ONLY THE ACTUAL BOOK CONTENT**
+   - Focus on the author's own ideas and arguments
+   - Summarize the actual chapters (usually starting with Chapter 1 or Introduction)
+   - Use the table of contents if present to identify real content
+   - Extract the author's thesis, arguments, evidence, and conclusions
 
-3. DETAILED CONTENT SECTIONS (6-8 major sections):
-   Each section should contain:
-   - Clear, descriptive title indicating the big idea
-   - 2-4 subsections exploring specific aspects
-   - Each subsection: 3-4 paragraphs (150-250 words total)
-   - Mix of explanation, concrete examples, and key takeaways
-   - Bold text for key concepts and terms
-
-4. JONATHAN'S JOTS NOTES (1-2 per subsection, 100-150 words each):
-   These are YOUR critical analysis and research integration. Each note must:
-   - Be clearly labeled by type: COMPARATIVE, CONTEXT, CRITIQUE, PRACTICAL, or EXPERT
-   - Reference specific external sources (books, studies, expert perspectives)
-   - Provide substantive analysis, not superficial commentary
-   - Add genuine value beyond the original text
-
-   Note Types Explained:
-   - COMPARATIVE: Compare to similar works, contrasting approaches or conclusions
-   - CONTEXT: Provide historical, cultural, or scientific context; cite newer research
-   - CRITIQUE: Evaluate strengths/limitations; present counterarguments with evidence
-   - PRACTICAL: Offer specific implementation steps, real-world applications, techniques
-   - EXPERT: Include perspectives from practitioners, researchers, or thought leaders in the field
-
-5. RESEARCH SOURCES (8-12 high-quality sources):
-   For each source provide:
-   - Full book title
-   - Author name
-   - Author credentials (degrees, institutions, notable achievements)
-   - Specific relevance explaining HOW this source enriches the summary
-   
-   Sources should include:
-   - Seminal works in the same field
-   - Recent research that supports or challenges the book's claims
-   - Practical guides that complement the theory
-   - Works from adjacent fields that provide broader context
-
-CONTENT QUALITY STANDARDS:
-
-Depth & Nuance:
-- Go beyond surface-level summary to analyze WHY arguments matter
-- Identify assumptions, evaluate evidence quality, note logical gaps
-- Present multiple perspectives, including dissenting views
-- Explain how ideas fit into broader intellectual discourse
-
-Clarity & Accessibility:
-- Use plain language to explain complex concepts
-- Provide concrete examples and relatable scenarios
-- Use analogies and metaphors to illuminate abstract ideas
-- Maintain professional yet conversational tone
-
-Scholarly Rigor:
-- Cite specific studies, statistics, and research findings
-- Verify claims against current scientific consensus
-- Note when research is outdated or has been superseded
-- Distinguish between evidence-based claims and speculation
-
-Actionability:
-- Provide step-by-step implementation guidance
-- Include specific techniques readers can apply immediately
-- Offer frameworks for adapting concepts to different contexts
-- Suggest reflection questions for deeper engagement
-
-TARGET SPECIFICATIONS:
-- Total length: 4,000-6,000 words (substantially more comprehensive than basic summaries)
-- 6-8 major sections with 2-4 subsections each
-- 12-24 Jonathan's Jots notes distributed throughout
-- 8-12 research sources with full credentials
-- Professional formatting with clear hierarchy
+4. **USE PLAIN TEXT FORMATTING ONLY**
+   - DO NOT use markdown syntax (no **, *, #, etc.)
+   - DO NOT include raw quote marks or escaped characters
+   - Use \\n\\n for paragraph breaks
+   - Write in clear, professional prose
 
 DOCUMENT TO ANALYZE:
-${documentText.slice(0, 50000)}
+${documentText.slice(0, 100000)}
 
-${bookTitle ? `BOOK TITLE: ${bookTitle}` : ''}
-${bookAuthor ? `BOOK AUTHOR: ${bookAuthor}` : ''}
+${bookTitle ? `BOOK TITLE: ${bookTitle}` : 'BOOK TITLE: Extract from document'}
+${bookAuthor ? `BOOK AUTHOR: ${bookAuthor}` : 'BOOK AUTHOR: Extract from document'}
 
-CRITICAL OUTPUT INSTRUCTION:
-Respond with a single valid JSON object (no markdown fences, no commentary).
-Use double quotes for all property names and string values.
-Escape internal double quotes in text content.
+QUALITY STANDARDS (Must EXCEED Shortform):
 
-OUTPUT FORMAT (JSON schema):
+**Length & Depth:**
+- Total summary: 4,000-6,000 words (33-50% longer than Shortform)
+- One-page summary: 500-750 words
+- Each subsection: 300-500 words
+- Each Jonathan's Jots note: 100-150 words
+
+**Structure:**
+- 5-8 main sections (matching book chapters or themes)
+- 2-4 subsections per section
+- 1-2 Jonathan's Jots notes per subsection
+- 8-12 research sources with full credentials
+
+**Content Requirements:**
+
+1. **INTRODUCTION (300-400 words, 2-3 paragraphs):**
+   - Author's background and credibility
+   - Book's core thesis
+   - Why this book matters
+   - What readers will learn
+   - Use \\n\\n between paragraphs
+
+2. **ONE-PAGE SUMMARY (500-750 words, 4-6 paragraphs):**
+   - Core thesis statement
+   - 3-5 main arguments with explanations
+   - Key supporting evidence from the book
+   - Critical takeaways
+   - Practical implications
+   - Use \\n\\n between paragraphs
+
+3. **DETAILED SECTIONS (5-8 sections):**
+   Each section contains:
+   - Clear title (e.g., "Chapter 1: Understanding Emotional Immaturity")
+   - 2-4 subsections with specific concepts
+   - Each subsection: 300-500 words explaining the concept
+   - Include specific examples and evidence from the book
+   - Use \\n\\n for paragraph breaks
+
+4. **JONATHAN'S JOTS NOTES (100-150 words each):**
+   Five types of notes:
+   - **Comparative**: Compare to other research or frameworks
+   - **Context**: Historical, cultural, or scientific context
+   - **Critique**: Evaluate arguments, present counterarguments
+   - **Practical**: Implementation techniques and frameworks
+   - **Expert**: Insights from related fields
+   
+   Each note must:
+   - Provide substantive critical analysis
+   - Reference specific research or experts
+   - Add value beyond the book's content
+   - Be 100-150 words of plain text
+
+5. **RESEARCH SOURCES (8-12 sources):**
+   - Credible books, studies, or expert perspectives
+   - Full author credentials (PhD, institution, position)
+   - Clear relevance to the book's themes
+   - Mix of supporting and challenging viewpoints
+
+**Critical Analysis:**
+- Evaluate the strength of arguments
+- Present alternative perspectives
+- Discuss limitations of research
+- Note outdated or contested findings
+- Distinguish correlation from causation
+
+**Actionability:**
+- Specific, implementable techniques
+- Step-by-step frameworks
+- Examples of successful implementation
+- Common pitfalls to avoid
+
+**Scholarly Rigor:**
+- Cite specific studies with methodology
+- Verify claims against current research
+- Reference meta-analyses when available
+- Note when findings are preliminary
+
+REQUIRED JSON OUTPUT FORMAT:
 {
-  "bookTitle": "string | null",
-  "bookAuthor": "string | null",
-  "introduction": "3-4 paragraphs introducing the work, author credentials, context, and central thesis",
-  "onePageSummary": "4-6 paragraphs providing comprehensive narrative overview of all major themes and practical implications",
+  "bookTitle": "Exact title of the book",
+  "bookAuthor": "Full name of the author",
+  "introduction": "2-3 paragraphs (300-400 words total) in plain text. Use \\n\\n between paragraphs. NO markdown syntax.",
+  "onePageSummary": "4-6 paragraphs (500-750 words total) in plain text. Use \\n\\n between paragraphs. NO markdown syntax.",
   "sections": [
     {
-      "title": "Section 1: Clear Descriptive Title Indicating Big Idea",
+      "title": "Section or Chapter Title",
       "subsections": [
         {
-          "title": "Subsection 1.1: Specific Focused Topic",
-          "content": "3-4 paragraphs (150-250 words) with explanation, concrete examples, and key takeaways. Use bold for **key concepts**.",
+          "title": "Specific Concept or Key Insight",
+          "content": "300-500 words in plain text explaining this concept. Use \\n\\n for paragraph breaks. NO markdown syntax.",
           "jotsNotes": [
             {
-              "type": "comparative | context | critique | practical | expert",
-              "content": "100-150 word substantive analysis referencing specific external sources, providing genuine added value beyond the original text"
+              "type": "jonathans_jots_note",
+              "noteType": "Comparative|Context|Critique|Practical|Expert",
+              "content": "100-150 words of critical analysis in plain text. NO markdown syntax.",
+              "sources": [
+                {
+                  "title": "Full title of research source",
+                  "author": "Author name",
+                  "authorCredentials": "Complete credentials",
+                  "url": "https://example.com/source"
+                }
+              ]
             }
           ]
         }
@@ -133,13 +153,22 @@ OUTPUT FORMAT (JSON schema):
   ],
   "researchSources": [
     {
-      "title": "Complete Book Title",
-      "author": "Author Full Name",
-      "authorCredentials": "PhD in [Field] from [Institution], Professor at [University], Author of [Notable Works]",
-      "relevance": "Specific explanation of HOW this source enriches the summary - what unique perspective, evidence, or framework it provides"
+      "title": "Full title of credible source",
+      "author": "Author name",
+      "authorCredentials": "Complete credentials (PhD, position, institution)",
+      "relevance": "How this source supports or challenges the book's arguments"
     }
   ]
 }
 
-Return the JSON now.`;
+CRITICAL REMINDERS:
+✓ Summarize ACTUAL BOOK CONTENT (not testimonials or reviews)
+✓ Use PLAIN TEXT ONLY (no markdown syntax)
+✓ 4,000-6,000 total words
+✓ 8-12 research sources
+✓ 100-150 word Jonathan's Jots notes
+✓ Valid JSON structure
+✓ Use \\n\\n for paragraph breaks
+
+Return ONLY the JSON object (no markdown code blocks, no extra text):`;
 }

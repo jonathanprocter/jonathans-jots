@@ -41,6 +41,7 @@ function countJotsNotes(parsed: any): number {
   return count;
 }
 import { generateSummaryWithProgress, getProgress } from "./progressiveSummary";
+import { generateSummaryPDF } from "./pdfExport";
 
 export const appRouter = router({
   system: systemRouter,
@@ -289,6 +290,42 @@ export const appRouter = router({
           stage: 'Initializing...',
           sectionsCompleted: 0,
           totalSections: 0,
+        };
+      }),
+
+    // Export summary as PDF
+    exportPDF: publicProcedure
+      .input(z.object({
+        summaryId: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const summary = await getSummary(input.summaryId);
+        const userId = ctx.user?.id || 'anonymous';
+        
+        verifySummaryAccess(summary, userId);
+        
+        // Parse mainContent
+        const parsedContent = parseSummaryContent(summary!.mainContent);
+        
+        // Prepare summary data for PDF
+        const summaryData = {
+          bookTitle: summary!.bookTitle,
+          bookAuthor: summary!.bookAuthor,
+          introduction: summary!.introduction || '',
+          onePageSummary: summary!.onePageSummary || '',
+          sections: parsedContent.sections || [],
+          researchSources: parsedContent.researchSources || [],
+        };
+        
+        // Generate PDF
+        const pdf = generateSummaryPDF(summaryData);
+        const pdfBuffer = Buffer.from(pdf.output('arraybuffer'));
+        const pdfBase64 = pdfBuffer.toString('base64');
+        
+        return {
+          success: true,
+          filename: `${summary!.bookTitle || 'summary'}.pdf`,
+          pdfData: pdfBase64,
         };
       }),
 

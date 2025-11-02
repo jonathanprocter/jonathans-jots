@@ -15,6 +15,7 @@ import { LiveSummaryPreview } from '@/components/LiveSummaryPreview';
 import JotsSummaryRenderer from "@/components/JotsSummaryRenderer";
 import { FileText, Loader2, BookOpen, RefreshCw, Eye, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Download } from 'lucide-react';
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -75,7 +76,30 @@ export default function Home() {
       utils.summaries.list.invalidate();
     },
     onError: (error) => {
-      toast.error(error.message || 'Failed to delete summary');
+      toast.error(`Failed to delete summary: ${error.message}`);
+    },
+  });
+
+  const exportPDFMutation = trpc.summaries.exportPDF.useMutation({
+    onSuccess: (data) => {
+      // Convert base64 to blob and download
+      const byteCharacters = atob(data.pdfData);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = data.filename;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      toast.success('PDF exported successfully');
+    },
+    onError: (error) => {
+      toast.error(`Failed to export PDF: ${error.message}`);
     },
   });
 
@@ -135,9 +159,19 @@ export default function Home() {
         <div className="border-b-4 border-[#D4772E] bg-white sticky top-0 z-10 shadow-sm">
           <div className="container py-4 flex items-center justify-between">
             <JotsLogo />
-            <Button onClick={() => setViewingSummaryId(null)} variant="outline">
-              ← Back to Dashboard
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => exportPDFMutation.mutate({ summaryId: viewingSummary.id })}
+                variant="outline"
+                disabled={exportPDFMutation.isPending}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {exportPDFMutation.isPending ? 'Exporting...' : 'Export PDF'}
+              </Button>
+              <Button onClick={() => setViewingSummaryId(null)} variant="outline">
+                ← Back to Dashboard
+              </Button>
+            </div>
           </div>
         </div>
         <JotsSummaryRenderer summary={viewingSummary} />
