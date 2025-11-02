@@ -56,6 +56,9 @@ coverage/
 # Dependency directories
 jspm_packages/
 
+# Lock files (use pnpm-lock.yaml only)
+package-lock.json
+
 # TypeScript cache
 *.tsbuildinfo
 

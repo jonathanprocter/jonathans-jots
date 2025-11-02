@@ -6,7 +6,7 @@ PORT = "3000"
 NODE_ENV = "production"
 
 [deployment]
-run = ["pnpm"]
+run = ["pnpm", "start"]
 deploymentTarget = "autoscale"
 build = ["pnpm", "run", "build"]
 
@@ -39,10 +39,6 @@ outputType = "webview"
 
 [[ports]]
 localPort = 3000
-externalPort = 8008
-
-[[ports]]
-localPort = 5000
 externalPort = 8000
 
 [[ports]]
@@ -84,7 +80,3 @@ externalPort = 6000
 [[ports]]
 localPort = 5010
 externalPort = 6800
-
-[[ports]]
-localPort = 41383
-externalPort = 8080
