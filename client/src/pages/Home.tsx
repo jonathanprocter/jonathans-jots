@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { useAuth } from '@/_core/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { getLoginUrl } from '@/const';
 import { trpc } from '@/lib/trpc';
 import { DocumentUpload } from '@/components/DocumentUpload';
 import { JotsLogo } from '@/components/JotsLogo';
@@ -17,7 +15,6 @@ import { FileText, Loader2, BookOpen, RefreshCw, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Home() {
-  const { user, loading } = useAuth();
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [viewingSummaryId, setViewingSummaryId] = useState<string | null>(null);
   const [bookTitle, setBookTitle] = useState('');
@@ -83,14 +80,6 @@ export default function Home() {
         return <Badge variant="outline">{status}</Badge>;
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
 
   // If viewing a summary, show appropriate view
   if (viewingSummary) {
