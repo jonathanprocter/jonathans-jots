@@ -82,7 +82,7 @@ localPort = 5010
 externalPort = 6800
 
 [[ports]]
-localPort = 41239
+localPort = 45659
 externalPort = 8008
 
 [nix]
