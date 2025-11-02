@@ -105,3 +105,6 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+
+# Uploaded files (use database or object storage for persistence in production)
+uploads/
