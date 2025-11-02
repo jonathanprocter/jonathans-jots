@@ -453,3 +453,32 @@ export async function deleteResearchSourcesBySummaryId(summaryId: string): Promi
 
   await db.delete(researchSources).where(eq(researchSources.summaryId, summaryId));
 }
+
+/**
+ * Delete a document by ID
+ */
+export async function deleteDocument(documentId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    memoryDocuments.delete(documentId);
+    return;
+  }
+
+  await db.delete(documents).where(eq(documents.id, documentId));
+}
+
+/**
+ * Delete a summary by ID (also deletes associated research sources)
+ */
+export async function deleteSummary(summaryId: string): Promise<void> {
+  // First delete associated research sources
+  await deleteResearchSourcesBySummaryId(summaryId);
+  
+  const db = await getDb();
+  if (!db) {
+    memorySummaries.delete(summaryId);
+    return;
+  }
+
+  await db.delete(summaries).where(eq(summaries.id, summaryId));
+}

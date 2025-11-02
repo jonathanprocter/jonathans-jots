@@ -13,7 +13,7 @@ import { JotsLogo } from '@/components/JotsLogo';
 import { GeneratingLoader } from '@/components/GeneratingLoader';
 import { LiveSummaryPreview } from '@/components/LiveSummaryPreview';
 import JotsSummaryRenderer from "@/components/JotsSummaryRenderer";
-import { FileText, Loader2, BookOpen, RefreshCw, Eye } from 'lucide-react';
+import { FileText, Loader2, BookOpen, RefreshCw, Eye, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Home() {
@@ -54,6 +54,28 @@ export default function Home() {
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to generate summary');
+    },
+  });
+
+  // Delete document mutation
+  const deleteDocumentMutation = trpc.documents.delete.useMutation({
+    onSuccess: () => {
+      toast.success('Document deleted successfully');
+      utils.documents.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to delete document');
+    },
+  });
+
+  // Delete summary mutation
+  const deleteSummaryMutation = trpc.summaries.delete.useMutation({
+    onSuccess: () => {
+      toast.success('Summary deleted successfully');
+      utils.summaries.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to delete summary');
     },
   });
 
@@ -285,6 +307,18 @@ export default function Home() {
                                 Use for Summary
                               </Button>
                             )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                if (confirm('Are you sure you want to delete this document?')) {
+                                  deleteDocumentMutation.mutate({ documentId: doc.id });
+                                }
+                              }}
+                              disabled={deleteDocumentMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -349,6 +383,18 @@ export default function Home() {
                                 View Summary
                               </Button>
                             )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                if (confirm('Are you sure you want to delete this summary?')) {
+                                  deleteSummaryMutation.mutate({ summaryId: summary.id });
+                                }
+                              }}
+                              disabled={deleteSummaryMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
                           </div>
                         </div>
                       ))}

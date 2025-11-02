@@ -8,11 +8,13 @@ import {
   getDocument, 
   getUserDocuments,
   updateDocumentStatus,
+  deleteDocument,
   createSummary,
   getSummary,
   getSummaryByDocumentId,
   getUserSummaries,
   updateSummary,
+  deleteSummary,
   createResearchSource,
   getResearchSourcesBySummaryId,
   Document,
@@ -130,6 +132,25 @@ export const appRouter = router({
         verifyDocumentAccess(document, userId);
 
         return document;
+      }),
+
+    // Delete a document
+    delete: publicProcedure
+      .input(z.object({
+        documentId: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 'anonymous';
+        const document = await getDocument(input.documentId);
+        
+        verifyDocumentAccess(document, userId);
+
+        await deleteDocument(input.documentId);
+
+        return {
+          success: true,
+          message: 'Document deleted successfully',
+        };
       }),
   }),
 
@@ -268,6 +289,25 @@ export const appRouter = router({
           stage: 'Initializing...',
           sectionsCompleted: 0,
           totalSections: 0,
+        };
+      }),
+
+    // Delete a summary
+    delete: publicProcedure
+      .input(z.object({
+        summaryId: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 'anonymous';
+        const summary = await getSummary(input.summaryId);
+        
+        verifySummaryAccess(summary, userId);
+
+        await deleteSummary(input.summaryId);
+
+        return {
+          success: true,
+          message: 'Summary deleted successfully',
         };
       }),
   }),
