@@ -147,12 +147,27 @@ async function startServer() {
 
   const port = parseInt(process.env.PORT || "5000");
 
-  server.listen(port, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${port}/`);
+  return new Promise<void>((resolve, reject) => {
+    server.on('error', (error: NodeJS.ErrnoException) => {
+      console.error('[Server] Error starting server:', error);
+      if (error.code === 'EADDRINUSE') {
+        console.error(`[Server] Port ${port} is already in use`);
+      }
+      reject(error);
+    });
+
+    server.listen(port, "0.0.0.0", () => {
+      console.log(`Server running on http://0.0.0.0:${port}/`);
+      console.log('[Server] ✅ Server is ready to accept connections');
+      
+      // Setup graceful shutdown handlers
+      setupGracefulShutdown(server);
+      resolve();
+    });
   });
-  
-  // Setup graceful shutdown handlers
-  setupGracefulShutdown(server);
 }
 
-startServer().catch(console.error);
+startServer().catch((error) => {
+  console.error('[Server] Fatal error during startup:', error);
+  process.exit(1);
+});

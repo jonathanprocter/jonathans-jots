@@ -9,12 +9,18 @@ export async function initializeDatabase() {
   try {
     console.log("[Database] Initializing database tables...");
 
-    const db = await getDb();
+    const dbPromise = getDb();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Database initialization timeout after 10s")), 10000)
+    );
+    
+    const db = await Promise.race([dbPromise, timeoutPromise]) as Awaited<ReturnType<typeof getDb>>;
     if (!db) {
       throw new Error("Database not available");
     }
+    
+    console.log("[Database] Connected successfully, creating tables...");
 
-    // Create users table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(64) PRIMARY KEY,
@@ -26,8 +32,8 @@ export async function initializeDatabase() {
         "lastSignedIn" TIMESTAMP DEFAULT NOW()
       )
     `);
+    console.log("[Database] Users table ready");
 
-    // Create documents table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS documents (
         id VARCHAR(64) PRIMARY KEY,
@@ -44,8 +50,8 @@ export async function initializeDatabase() {
         "updatedAt" TIMESTAMP DEFAULT NOW()
       )
     `);
+    console.log("[Database] Documents table ready");
 
-    // Create summaries table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS summaries (
         id VARCHAR(64) PRIMARY KEY,
@@ -64,8 +70,8 @@ export async function initializeDatabase() {
         "updatedAt" TIMESTAMP DEFAULT NOW()
       )
     `);
+    console.log("[Database] Summaries table ready");
 
-    // Create researchSources table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS "researchSources" (
         id VARCHAR(64) PRIMARY KEY,
@@ -77,6 +83,7 @@ export async function initializeDatabase() {
         "createdAt" TIMESTAMP DEFAULT NOW()
       )
     `);
+    console.log("[Database] Research sources table ready");
 
     console.log("[Database] ✅ Database tables initialized successfully");
   } catch (error) {
