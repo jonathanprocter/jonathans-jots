@@ -1,8 +1,12 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
 import cookieParser from "cookie-parser";
+
+// Load environment variables with proper precedence (.env.local overrides .env)
+dotenv.config({ path: '.env' });
+dotenv.config({ path: '.env.local', override: true });
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
