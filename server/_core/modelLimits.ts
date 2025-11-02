@@ -10,7 +10,7 @@
  *
  * Latest models:
  * - OpenAI: gpt-4o (16K output tokens)
- * - Anthropic: claude-3-5-sonnet-20241022 (8K output tokens)
+ * - Anthropic: claude-sonnet-4-5-20250929 (64K output tokens)
  */
 
 type ModelLimitRule = {
@@ -21,8 +21,25 @@ type ModelLimitRule = {
 const MODEL_LIMIT_RULES: ModelLimitRule[] = [
   // Anthropic Claude families (latest models as of 2025)
   {
+    test: model => /^claude-sonnet-4/i.test(model),
+    maxOutputTokens: 64000,
+  },
+  {
+    test: model => /^claude-haiku-4/i.test(model),
+    maxOutputTokens: 64000,
+  },
+  {
+    test: model => /^claude-opus-4/i.test(model),
+    maxOutputTokens: 32000,
+  },
+  // Legacy Claude 3.x models
+  {
     test: model => /^claude-3\.5-sonnet/i.test(model),
     maxOutputTokens: 8192,
+  },
+  {
+    test: model => /^claude-3\.7-sonnet/i.test(model),
+    maxOutputTokens: 64000,
   },
   {
     test: model => /^claude-3-opus/i.test(model),

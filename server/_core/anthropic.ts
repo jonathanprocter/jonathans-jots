@@ -1,6 +1,6 @@
 /**
  * Anthropic Claude API Service
- * Provides Claude 3.5 Sonnet integration for high-quality long-form content generation
+ * Provides Claude Sonnet 4.5 integration for high-quality long-form content generation
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -31,13 +31,13 @@ export type LLMResponse = {
 const ENV = {
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   anthropicDefaultModel:
-    process.env.ANTHROPIC_SUMMARY_MODEL?.trim() || 'claude-3-5-sonnet-20241022',
+    process.env.ANTHROPIC_SUMMARY_MODEL?.trim() || 'claude-sonnet-4-5-20250929',
 };
 
 // Latest Claude model with best performance
 const DEFAULT_CLAUDE_MODEL = ENV.anthropicDefaultModel;
 const DEFAULT_MAX_OUTPUT_TOKENS =
-  resolveMaxOutputTokens(DEFAULT_CLAUDE_MODEL, undefined, 8192) ?? 8192;
+  resolveMaxOutputTokens(DEFAULT_CLAUDE_MODEL, undefined, 64000) ?? 64000;
 const MAX_CONTEXT_TOKENS = 200000; // Claude's 200K context window
 
 /**
@@ -202,7 +202,7 @@ export const isClaudeModel = (model?: string): boolean => {
  * Get the best Claude model for a specific task
  */
 export const getClaudeModelForTask = (task: 'summary' | 'analysis' | 'research'): string => {
-  // Always use Claude 3.5 Sonnet (latest and best)
+  // Always use Claude Sonnet 4.5 (latest and best)
   return DEFAULT_CLAUDE_MODEL;
 };
 

@@ -13,9 +13,9 @@ import { resolveMaxOutputTokens } from './modelLimits.js';
 
 // Model configuration
 const MODELS = {
-  // Claude 3.5 Sonnet - Best for long-form comprehensive summaries
+  // Claude Sonnet 4.5 - Best for long-form comprehensive summaries
   CLAUDE_SONNET:
-    process.env.ANTHROPIC_SUMMARY_MODEL?.trim() || 'claude-3-5-sonnet-20241022',
+    process.env.ANTHROPIC_SUMMARY_MODEL?.trim() || 'claude-sonnet-4-5-20250929',
   // GPT-4.1 - Latest OpenAI reasoning model for high fidelity tasks
   GPT4_LATEST:
     process.env.OPENAI_ROUTER_MODEL?.trim() || 'gpt-4.1',
