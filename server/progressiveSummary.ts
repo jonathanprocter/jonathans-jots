@@ -1,4 +1,5 @@
 import { invokeLLMWithRouting } from "./_core/llmRouter";
+import { ENV } from "./_core/env";
 import { generateShortformPrompt } from "./shortformPrompt";
 import {
   getDocument,
@@ -124,8 +125,11 @@ export async function generateSummaryWithProgress(
 
     const prompt = generateShortformPrompt(document.extractedText, bookTitle ?? undefined, bookAuthor ?? undefined);
 
+    const hasHostedModel =
+      Boolean(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY || ENV.forgeApiKey);
+
     progressStore.set(summaryId, {
-      stage: process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY
+      stage: hasHostedModel
         ? "AI is generating comprehensive summary with research..."
         : "Generating detailed offline summary (API keys not configured)...",
       sectionsCompleted: 0,
@@ -133,7 +137,7 @@ export async function generateSummaryWithProgress(
     });
 
     let structured: StructuredSummary | null = null;
-    if (process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY) {
+    if (hasHostedModel) {
       structured = await requestLLMSummary(prompt, derivedTitle, derivedAuthor, document.extractedText);
     }
 

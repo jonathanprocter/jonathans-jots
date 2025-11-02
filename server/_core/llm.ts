@@ -1,4 +1,5 @@
 import { ENV } from "./env";
+import { resolveMaxOutputTokens } from "./modelLimits.js";
 
 export type Role = "system" | "user" | "assistant" | "tool" | "function";
 
@@ -60,6 +61,7 @@ export type InvokeParams = {
   tools?: Tool[];
   toolChoice?: ToolChoice;
   tool_choice?: ToolChoice;
+  model?: string;
   maxTokens?: number;
   max_tokens?: number;
   outputSchema?: OutputSchema;
@@ -209,15 +211,48 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-    : "https://forge.manus.im/v1/chat/completions";
+type ApiConfig = {
+  url: string;
+  headers: Record<string, string>;
+};
 
-const assertApiKey = () => {
-  if (!ENV.forgeApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
+const resolveApiConfig = (): ApiConfig => {
+  const forgeKey = ENV.forgeApiKey?.trim();
+  if (forgeKey) {
+    const base = ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
+      ? ENV.forgeApiUrl.replace(/\/$/, "")
+      : "https://forge.manus.im";
+    return {
+      url: `${base}/v1/chat/completions`,
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${forgeKey}`,
+      },
+    };
   }
+
+  const openAIKey = process.env.OPENAI_API_KEY?.trim();
+  if (openAIKey) {
+    const base = (process.env.OPENAI_BASE_URL || "https://api.openai.com").trim().replace(/\/$/, "");
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+      authorization: `Bearer ${openAIKey}`,
+    };
+    const organization = process.env.OPENAI_ORG_ID?.trim() || process.env.OPENAI_ORGANIZATION?.trim();
+    if (organization) {
+      headers["OpenAI-Organization"] = organization;
+    }
+    const project = process.env.OPENAI_PROJECT_ID?.trim();
+    if (project) {
+      headers["OpenAI-Project"] = project;
+    }
+    return {
+      url: `${base}/v1/chat/completions`,
+      headers,
+    };
+  }
+
+  throw new Error("OPENAI_API_KEY is not configured");
 };
 
 /**
@@ -312,13 +347,14 @@ const normalizeResponseFormat = ({
 };
 
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  assertApiKey();
+  const apiConfig = resolveApiConfig();
 
   const {
     messages,
     tools,
     toolChoice,
     tool_choice,
+    model: explicitModel,
     outputSchema,
     output_schema,
     responseFormat,
@@ -327,7 +363,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
   return withRetry(async () => {
     const payload: Record<string, unknown> = {
-      model: process.env.OPENAI_MODEL || "manus-1.5",
+      model: explicitModel || process.env.OPENAI_MODEL || "manus-1.5",
       messages: messages.map(normalizeMessage),
     };
 
@@ -343,8 +379,23 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
       payload.tool_choice = normalizedToolChoice;
     }
 
-    payload.max_tokens = params.maxTokens || params.max_tokens || 32768;
-    
+    const requestedMaxTokens =
+      typeof params.maxTokens === "number"
+        ? params.maxTokens
+        : typeof params.max_tokens === "number"
+          ? params.max_tokens
+          : undefined;
+
+    const resolvedMaxTokens = resolveMaxOutputTokens(
+      String(payload.model),
+      requestedMaxTokens,
+      32768
+    );
+
+    if (typeof resolvedMaxTokens === "number") {
+      payload.max_tokens = resolvedMaxTokens;
+    }
+
     // Only add thinking budget if model supports it
     const model = String(payload.model);
     if (model.includes('gemini') || model.includes('thinking')) {
@@ -369,12 +420,9 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
-      const response = await fetch(resolveApiUrl(), {
+      const response = await fetch(apiConfig.url, {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${ENV.forgeApiKey}`,
-        },
+        headers: apiConfig.headers,
         body: JSON.stringify(payload),
         signal: controller.signal,
       });

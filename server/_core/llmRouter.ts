@@ -3,24 +3,25 @@
  * Uses the best model for each task to exceed Shortform quality standards
  */
 
-import { invokeLLM as invokeOpenAI, type InvokeParams, type InvokeResult } from './llm.js';
+import {
+  invokeLLM as invokeOpenAI,
+  type InvokeParams,
+  type InvokeResult,
+} from './llm.js';
 import { invokeAnthropic, type LLMParams, type LLMResponse } from './anthropic.js';
-import type { Message } from './llm.js';
+import { resolveMaxOutputTokens } from './modelLimits.js';
 
 // Model configuration
 const MODELS = {
   // Claude 3.5 Sonnet - Best for long-form comprehensive summaries
-  CLAUDE_SONNET: 'claude-3-5-sonnet-20241022',
-  // GPT-4 Turbo - Fast and accurate for document processing
-  GPT4_TURBO: 'gpt-4-turbo-2024-04-09',
-  // GPT-4o - Latest OpenAI model with vision
-  GPT4O: 'gpt-4o-2024-11-20',
-};
-
-// Max tokens configuration
-const MAX_TOKENS = {
-  CLAUDE: 8192,  // Claude's maximum output
-  GPT4: 16384,   // GPT-4's maximum output
+  CLAUDE_SONNET:
+    process.env.ANTHROPIC_SUMMARY_MODEL?.trim() || 'claude-3-5-sonnet-20241022',
+  // GPT-4.1 - Latest OpenAI reasoning model for high fidelity tasks
+  GPT4_LATEST:
+    process.env.OPENAI_ROUTER_MODEL?.trim() || 'gpt-4.1',
+  // GPT-4o mini - Efficient, high-context model for faster iterations
+  GPT4O_MINI:
+    process.env.OPENAI_ROUTER_FAST_MODEL?.trim() || 'gpt-4o-mini',
 };
 
 /**
@@ -43,25 +44,15 @@ export const getModelForTask = (task: TaskType): string => {
     case 'research_synthesis':
     case 'comparative_analysis':
       return MODELS.CLAUDE_SONNET; // Best for comprehensive, long-form content
-    
+
     case 'document_processing':
+      return MODELS.GPT4_LATEST; // Most capable OpenAI reasoning model
     case 'quick_analysis':
-      return MODELS.GPT4O; // Fast and accurate for processing
-    
+      return MODELS.GPT4O_MINI; // Fast and accurate for processing
+
     case 'default':
     default:
       return MODELS.CLAUDE_SONNET; // Default to Claude for quality
-  }
-};
-
-/**
- * Get maximum output tokens for a model
- */
-export const getMaxTokensForModel = (model: string): number => {
-  if (model.startsWith('claude-')) {
-    return MAX_TOKENS.CLAUDE;
-  } else {
-    return MAX_TOKENS.GPT4;
   }
 };
 
@@ -75,10 +66,17 @@ const isClaudeModel = (model: string): boolean => {
 /**
  * Convert InvokeParams to LLMParams for Anthropic
  */
-const convertToAnthropicParams = (params: InvokeParams): LLMParams => {
+const convertToAnthropicParams = (
+  params: InvokeParams,
+  model: string
+): LLMParams => {
+  const requestedMax = params.maxTokens || params.max_tokens;
+  const maxTokens =
+    resolveMaxOutputTokens(model, requestedMax, 8192) ?? 8192;
+
   return {
     messages: params.messages,
-    maxTokens: params.maxTokens || params.max_tokens || MAX_TOKENS.CLAUDE,
+    maxTokens,
     temperature: 0.7, // Good balance for creative yet accurate summaries
     topP: 0.9,
   };
@@ -117,41 +115,35 @@ export const invokeLLMWithRouting = async (
   task: TaskType = 'default'
 ): Promise<InvokeResult> => {
   const model = getModelForTask(task);
-  const maxTokens = getMaxTokensForModel(model);
+  const fallbackMax = model.startsWith('claude-') ? 8192 : 4096;
+  const maxTokens =
+    resolveMaxOutputTokens(
+      model,
+      params.maxTokens || params.max_tokens,
+      fallbackMax
+    ) ?? fallbackMax;
 
   console.log(`[LLM Router] Task: ${task}, Selected model: ${model}, Max tokens: ${maxTokens}`);
 
   if (isClaudeModel(model)) {
     // Use Claude via Anthropic API
     const anthropicParams: LLMParams = {
-      ...convertToAnthropicParams(params),
+      ...convertToAnthropicParams(params, model),
       model,
       maxTokens,
     };
-    
+
     const response = await invokeAnthropic(anthropicParams);
     return convertToInvokeResult(response);
   } else {
     // Use GPT via OpenAI-compatible API
     const openaiParams: InvokeParams = {
       ...params,
+      model,
       maxTokens: maxTokens,
     };
-    
-    // Override model in environment temporarily
-    const originalModel = process.env.OPENAI_MODEL;
-    process.env.OPENAI_MODEL = model;
-    
-    try {
-      return await invokeOpenAI(openaiParams);
-    } finally {
-      // Restore original model
-      if (originalModel) {
-        process.env.OPENAI_MODEL = originalModel;
-      } else {
-        delete process.env.OPENAI_MODEL;
-      }
-    }
+
+    return await invokeOpenAI(openaiParams);
   }
 };
 
@@ -162,37 +154,33 @@ export const invokeLLMWithModel = async (
   params: InvokeParams,
   model: string
 ): Promise<InvokeResult> => {
-  const maxTokens = getMaxTokensForModel(model);
+  const fallbackMax = model.startsWith('claude-') ? 8192 : 4096;
+  const maxTokens =
+    resolveMaxOutputTokens(
+      model,
+      params.maxTokens || params.max_tokens,
+      fallbackMax
+    ) ?? fallbackMax;
 
   console.log(`[LLM Router] Explicit model: ${model}, Max tokens: ${maxTokens}`);
 
   if (isClaudeModel(model)) {
     const anthropicParams: LLMParams = {
-      ...convertToAnthropicParams(params),
+      ...convertToAnthropicParams(params, model),
       model,
       maxTokens,
     };
-    
+
     const response = await invokeAnthropic(anthropicParams);
     return convertToInvokeResult(response);
   } else {
     const openaiParams: InvokeParams = {
       ...params,
+      model,
       maxTokens: maxTokens,
     };
-    
-    const originalModel = process.env.OPENAI_MODEL;
-    process.env.OPENAI_MODEL = model;
-    
-    try {
-      return await invokeOpenAI(openaiParams);
-    } finally {
-      if (originalModel) {
-        process.env.OPENAI_MODEL = originalModel;
-      } else {
-        delete process.env.OPENAI_MODEL;
-      }
-    }
+
+    return await invokeOpenAI(openaiParams);
   }
 };
 
@@ -200,7 +188,6 @@ export default {
   invokeLLMWithRouting,
   invokeLLMWithModel,
   getModelForTask,
-  getMaxTokensForModel,
   MODELS,
 };
 
