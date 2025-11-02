@@ -475,6 +475,9 @@ export async function deleteSummary(id: string): Promise<void> {
 }
 
 export async function deleteDocument(id: string): Promise<void> {
+  // Get document details before deleting for file cleanup
+  const document = await getDocument(id);
+
   const db = await getDb();
   if (!db) {
     // Find and delete associated summaries and their research sources
@@ -492,19 +495,30 @@ export async function deleteDocument(id: string): Promise<void> {
     }
     // Delete the document
     memoryDocuments.delete(id);
-    return;
+  } else {
+    // Find and delete associated summaries and their research sources
+    const documentSummaries = await db
+      .select()
+      .from(summaries)
+      .where(eq(summaries.documentId, id));
+
+    for (const summary of documentSummaries) {
+      await db.delete(researchSources).where(eq(researchSources.summaryId, summary.id));
+    }
+
+    await db.delete(summaries).where(eq(summaries.documentId, id));
+    await db.delete(documents).where(eq(documents.id, id));
   }
 
-  // Find and delete associated summaries and their research sources
-  const documentSummaries = await db
-    .select()
-    .from(summaries)
-    .where(eq(summaries.documentId, id));
-
-  for (const summary of documentSummaries) {
-    await db.delete(researchSources).where(eq(researchSources.summaryId, summary.id));
+  // Delete the physical file from storage
+  if (document?.storageKey) {
+    try {
+      const { deleteStorageFile } = await import('./storage');
+      await deleteStorageFile(document.storageKey);
+      console.log(`[Storage] Deleted file: ${document.storageKey}`);
+    } catch (error) {
+      console.error(`[Storage] Failed to delete file ${document.storageKey}:`, error);
+      // Don't throw - file might already be deleted, and we don't want to fail the DB deletion
+    }
   }
-
-  await db.delete(summaries).where(eq(summaries.documentId, id));
-  await db.delete(documents).where(eq(documents.id, id));
 }

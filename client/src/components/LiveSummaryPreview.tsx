@@ -122,8 +122,25 @@ export function LiveSummaryPreview({ summaryId, onComplete, onBack }: LiveSummar
           <JotsSummaryRenderer summary={summary} />
         ) : (
           <div className="text-center py-16">
-            <p className="text-red-600 mb-4">Summary generation failed</p>
-            <Button onClick={onBack}>Back to Dashboard</Button>
+            <div className="max-w-2xl mx-auto">
+              <p className="text-red-600 font-semibold mb-2 text-lg">Summary Generation Failed</p>
+              {summary.errorMessage && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-red-800 mb-2 font-medium">Error Details:</p>
+                  <p className="text-sm text-red-700">{summary.errorMessage}</p>
+                </div>
+              )}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 text-sm text-left">
+                <p className="font-medium mb-2">Common solutions:</p>
+                <ul className="list-disc list-inside space-y-1 text-gray-700">
+                  <li>Ensure API keys are configured (ANTHROPIC_API_KEY or OPENAI_API_KEY)</li>
+                  <li>Check if you've exceeded API rate limits</li>
+                  <li>Verify the document text was extracted successfully</li>
+                  <li>Try uploading the document again</li>
+                </ul>
+              </div>
+              <Button onClick={onBack}>Back to Dashboard</Button>
+            </div>
           </div>
         )}
       </div>

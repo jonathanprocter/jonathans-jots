@@ -136,12 +136,34 @@ export async function storageGet(
 export async function storageGetFile(relKey: string): Promise<Buffer> {
   const key = normalizeKey(relKey);
   const filePath = path.join(STORAGE_DIR, key);
-  
+
   try {
     return await fs.readFile(filePath);
   } catch (error) {
     throw new Error(`File not found: ${key}`);
   }
+}
+
+/**
+ * Delete file from storage
+ */
+export async function deleteStorageFile(relKey: string): Promise<void> {
+  return withRetry(async () => {
+    const key = normalizeKey(relKey);
+    const filePath = path.join(STORAGE_DIR, key);
+
+    try {
+      await fs.unlink(filePath);
+      // Remove from cache if present
+      urlCache.delete(key);
+      console.log(`[Storage] Deleted file: ${key}`);
+    } catch (error) {
+      // Ignore if file doesn't exist
+      if ((error as any).code !== 'ENOENT') {
+        throw error;
+      }
+    }
+  });
 }
 
 // Legacy compatibility - these functions are not needed for local storage

@@ -1,5 +1,7 @@
 import { getDb } from "./db";
 import { sql } from "drizzle-orm";
+import { promises as fs } from "fs";
+import path from "path";
 
 /**
  * Initialize database tables if they don't exist
@@ -7,6 +9,16 @@ import { sql } from "drizzle-orm";
  */
 export async function initializeDatabase() {
   console.log("[Database] Initializing database tables...");
+
+  // Ensure uploads directory exists
+  const uploadsDir = path.join(process.cwd(), 'uploads');
+  try {
+    await fs.access(uploadsDir);
+    console.log("[Storage] Uploads directory already exists");
+  } catch {
+    await fs.mkdir(uploadsDir, { recursive: true });
+    console.log("[Storage] ✅ Created uploads directory");
+  }
 
   const db = await getDb();
   if (!db) {
