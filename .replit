@@ -6,9 +6,9 @@ PORT = "3000"
 NODE_ENV = "production"
 
 [deployment]
-run = ["npm", "start"]
+run = ["pnpm"]
 deploymentTarget = "autoscale"
-build = ["npm", "run", "build"]
+build = ["pnpm", "run", "build"]
 
 [agent]
 expertMode = true
@@ -36,6 +36,14 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[ports]]
+localPort = 3000
+externalPort = 8008
+
+[[ports]]
+localPort = 5000
+externalPort = 8000
 
 [[ports]]
 localPort = 5001
@@ -76,3 +84,7 @@ externalPort = 6000
 [[ports]]
 localPort = 5010
 externalPort = 6800
+
+[[ports]]
+localPort = 41383
+externalPort = 8080
