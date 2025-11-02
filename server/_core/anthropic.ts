@@ -5,6 +5,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import type { Message, MessageContent } from './llm.js';
+import { resolveMaxOutputTokens } from './modelLimits.js';
 
 // Define types for Anthropic service
 export type LLMParams = {
@@ -29,11 +30,14 @@ export type LLMResponse = {
 
 const ENV = {
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+  anthropicDefaultModel:
+    process.env.ANTHROPIC_SUMMARY_MODEL?.trim() || 'claude-3-5-sonnet-20241022',
 };
 
 // Latest Claude model with best performance
-const CLAUDE_MODEL = 'claude-3-5-sonnet-20241022';
-const MAX_OUTPUT_TOKENS = 8192; // Claude's maximum output tokens
+const DEFAULT_CLAUDE_MODEL = ENV.anthropicDefaultModel;
+const DEFAULT_MAX_OUTPUT_TOKENS =
+  resolveMaxOutputTokens(DEFAULT_CLAUDE_MODEL, undefined, 8192) ?? 8192;
 const MAX_CONTEXT_TOKENS = 200000; // Claude's 200K context window
 
 /**
@@ -162,12 +166,19 @@ export const invokeAnthropic = async (params: LLMParams): Promise<LLMResponse> =
   const client = getAnthropicClient();
   const { system, messages } = convertToAnthropicFormat(params.messages);
 
-  console.log(`[Anthropic] Invoking Claude 3.5 Sonnet with ${messages.length} messages`);
+  const model = params.model || DEFAULT_CLAUDE_MODEL;
+  const maxTokens =
+    resolveMaxOutputTokens(model, params.maxTokens, DEFAULT_MAX_OUTPUT_TOKENS) ??
+    DEFAULT_MAX_OUTPUT_TOKENS;
+
+  console.log(
+    `[Anthropic] Invoking ${model} with ${messages.length} messages (max ${maxTokens} tokens)`
+  );
 
   const response = await withRetry(async () => {
     return await client.messages.create({
-      model: params.model || CLAUDE_MODEL,
-      max_tokens: params.maxTokens || MAX_OUTPUT_TOKENS,
+      model,
+      max_tokens: maxTokens,
       messages,
       system,
       temperature: params.temperature ?? 0.7,
@@ -192,14 +203,14 @@ export const isClaudeModel = (model?: string): boolean => {
  */
 export const getClaudeModelForTask = (task: 'summary' | 'analysis' | 'research'): string => {
   // Always use Claude 3.5 Sonnet (latest and best)
-  return CLAUDE_MODEL;
+  return DEFAULT_CLAUDE_MODEL;
 };
 
 /**
  * Get maximum output tokens for Claude
  */
 export const getClaudeMaxTokens = (): number => {
-  return MAX_OUTPUT_TOKENS;
+  return DEFAULT_MAX_OUTPUT_TOKENS;
 };
 
 /**

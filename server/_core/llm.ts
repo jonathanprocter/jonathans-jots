@@ -1,4 +1,5 @@
 import { ENV } from "./env";
+import { resolveMaxOutputTokens } from "./modelLimits.js";
 
 export type Role = "system" | "user" | "assistant" | "tool" | "function";
 
@@ -60,6 +61,7 @@ export type InvokeParams = {
   tools?: Tool[];
   toolChoice?: ToolChoice;
   tool_choice?: ToolChoice;
+  model?: string;
   maxTokens?: number;
   max_tokens?: number;
   outputSchema?: OutputSchema;
@@ -352,6 +354,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     tools,
     toolChoice,
     tool_choice,
+    model: explicitModel,
     outputSchema,
     output_schema,
     responseFormat,
@@ -360,7 +363,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
   return withRetry(async () => {
     const payload: Record<string, unknown> = {
-      model: process.env.OPENAI_MODEL || "manus-1.5",
+      model: explicitModel || process.env.OPENAI_MODEL || "manus-1.5",
       messages: messages.map(normalizeMessage),
     };
 
@@ -376,8 +379,23 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
       payload.tool_choice = normalizedToolChoice;
     }
 
-    payload.max_tokens = params.maxTokens || params.max_tokens || 32768;
-    
+    const requestedMaxTokens =
+      typeof params.maxTokens === "number"
+        ? params.maxTokens
+        : typeof params.max_tokens === "number"
+          ? params.max_tokens
+          : undefined;
+
+    const resolvedMaxTokens = resolveMaxOutputTokens(
+      String(payload.model),
+      requestedMaxTokens,
+      32768
+    );
+
+    if (typeof resolvedMaxTokens === "number") {
+      payload.max_tokens = resolvedMaxTokens;
+    }
+
     // Only add thinking budget if model supports it
     const model = String(payload.model);
     if (model.includes('gemini') || model.includes('thinking')) {
