@@ -124,7 +124,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Deployment Configuration
 
-**Current Status:** ✅ Ready for Production Deployment
+**Current Status:** ✅ Ready for Production Deployment (Fixed npm/pnpm compatibility)
 
 The application is configured for deployment on Replit using **Autoscale** deployment type, which is ideal for web applications with variable traffic.
 
@@ -161,6 +161,13 @@ The application is configured for deployment on Replit using **Autoscale** deplo
 - ✅ Database schema initialized
 - ✅ Static file serving configured
 - ✅ Health check endpoint available at `/health`
+
+**Deployment Fixes Applied:**
+- Removed incompatible `@builder.io/vite-plugin-jsx-loc` package
+- Configured `.npmrc` with `legacy-peer-deps=true` to handle npm/pnpm compatibility
+- Added `preinstall` script to prefer pnpm
+- Package manager set to `pnpm@10.4.1` in package.json
+- Only pnpm-lock.yaml is used (package-lock.json is gitignored)
 
 **To Deploy:**
 1. Click the "Publish" button at the top of Replit
