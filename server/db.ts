@@ -453,3 +453,58 @@ export async function deleteResearchSourcesBySummaryId(summaryId: string): Promi
 
   await db.delete(researchSources).where(eq(researchSources.summaryId, summaryId));
 }
+
+export async function deleteSummary(id: string): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    // Delete associated research sources first
+    for (const [sourceId, source] of Array.from(memoryResearchSources.entries())) {
+      if (source.summaryId === id) {
+        memoryResearchSources.delete(sourceId);
+      }
+    }
+    // Delete the summary
+    memorySummaries.delete(id);
+    return;
+  }
+
+  // Delete associated research sources first
+  await db.delete(researchSources).where(eq(researchSources.summaryId, id));
+  // Delete the summary
+  await db.delete(summaries).where(eq(summaries.id, id));
+}
+
+export async function deleteDocument(id: string): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    // Find and delete associated summaries and their research sources
+    for (const [summaryId, summary] of Array.from(memorySummaries.entries())) {
+      if (summary.documentId === id) {
+        // Delete research sources for this summary
+        for (const [sourceId, source] of Array.from(memoryResearchSources.entries())) {
+          if (source.summaryId === summaryId) {
+            memoryResearchSources.delete(sourceId);
+          }
+        }
+        // Delete the summary
+        memorySummaries.delete(summaryId);
+      }
+    }
+    // Delete the document
+    memoryDocuments.delete(id);
+    return;
+  }
+
+  // Find and delete associated summaries and their research sources
+  const documentSummaries = await db
+    .select()
+    .from(summaries)
+    .where(eq(summaries.documentId, id));
+
+  for (const summary of documentSummaries) {
+    await db.delete(researchSources).where(eq(researchSources.summaryId, summary.id));
+  }
+
+  await db.delete(summaries).where(eq(summaries.documentId, id));
+  await db.delete(documents).where(eq(documents.id, id));
+}

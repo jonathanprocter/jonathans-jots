@@ -3,16 +3,18 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { 
-  createDocument, 
-  getDocument, 
+import {
+  createDocument,
+  getDocument,
   getUserDocuments,
   updateDocumentStatus,
+  deleteDocument,
   createSummary,
   getSummary,
   getSummaryByDocumentId,
   getUserSummaries,
   updateSummary,
+  deleteSummary,
   createResearchSource,
   getResearchSourcesBySummaryId,
   Document,
@@ -126,10 +128,29 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         const document = await getDocument(input.documentId);
         const userId = ctx.user?.id || 'anonymous';
-        
+
         verifyDocumentAccess(document, userId);
 
         return document;
+      }),
+
+    // Delete a document
+    delete: publicProcedure
+      .input(z.object({
+        documentId: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 'anonymous';
+        const document = await getDocument(input.documentId);
+
+        verifyDocumentAccess(document, userId);
+
+        await deleteDocument(input.documentId);
+
+        return {
+          success: true,
+          message: 'Document and associated summaries deleted successfully',
+        };
       }),
   }),
 
@@ -270,6 +291,25 @@ export const appRouter = router({
           totalSections: 0,
         };
       }),
+
+    // Delete a summary
+    delete: publicProcedure
+      .input(z.object({
+        summaryId: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 'anonymous';
+        const summary = await getSummary(input.summaryId);
+
+        verifySummaryAccess(summary, userId);
+
+        await deleteSummary(input.summaryId);
+
+        return {
+          success: true,
+          message: 'Summary and associated research sources deleted successfully',
+        };
+      }),
   }),
 
   // Storage endpoint for serving uploaded files
@@ -368,10 +408,58 @@ async function processDocumentAsync(
     }
 
     await updateDocumentStatus(documentId, 'completed', result.text);
+
+    // Automatically generate summary after document processing completes
+    console.log(`Document ${documentId} processed successfully. Starting automatic summary generation...`);
+    await autoGenerateSummary(documentId);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error processing document:', errorMessage);
     throw error;
+  }
+}
+
+/**
+ * Automatically generate summary for a processed document
+ */
+async function autoGenerateSummary(documentId: string): Promise<void> {
+  try {
+    const document = await getDocument(documentId);
+    if (!document) {
+      console.error('Document not found for auto-generation:', documentId);
+      return;
+    }
+
+    // Check if summary already exists
+    const existingSummary = await getSummaryByDocumentId(documentId);
+    if (existingSummary) {
+      console.log('Summary already exists for document:', documentId);
+      return;
+    }
+
+    // Create summary record
+    const summaryId = nanoid();
+    await createSummary({
+      id: summaryId,
+      documentId,
+      userId: document.userId,
+      bookTitle: null,
+      bookAuthor: null,
+      status: 'generating',
+    });
+
+    console.log(`Created summary ${summaryId} for document ${documentId}. Starting generation...`);
+
+    // Generate summary with progress tracking
+    generateSummaryWithProgress(documentId, summaryId).catch(error => {
+      console.error('Auto-summary generation failed:', error);
+      updateSummary(summaryId, {
+        status: 'failed',
+        errorMessage: error.message,
+      });
+    });
+  } catch (error) {
+    console.error('Error in autoGenerateSummary:', error);
   }
 }
 

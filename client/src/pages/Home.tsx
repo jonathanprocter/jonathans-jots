@@ -13,7 +13,7 @@ import { JotsLogo } from '@/components/JotsLogo';
 import { GeneratingLoader } from '@/components/GeneratingLoader';
 import { LiveSummaryPreview } from '@/components/LiveSummaryPreview';
 import JotsSummaryRenderer from "@/components/JotsSummaryRenderer";
-import { FileText, Loader2, BookOpen, RefreshCw, Eye } from 'lucide-react';
+import { FileText, Loader2, BookOpen, RefreshCw, Eye, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Home() {
@@ -57,6 +57,32 @@ export default function Home() {
     },
   });
 
+  // Delete document mutation
+  const deleteDocumentMutation = trpc.documents.delete.useMutation({
+    onSuccess: () => {
+      toast.success('Document deleted successfully!');
+      utils.documents.list.invalidate();
+      utils.summaries.list.invalidate();
+      if (selectedDocumentId) {
+        setSelectedDocumentId(null);
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to delete document');
+    },
+  });
+
+  // Delete summary mutation
+  const deleteSummaryMutation = trpc.summaries.delete.useMutation({
+    onSuccess: () => {
+      toast.success('Summary deleted successfully!');
+      utils.summaries.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to delete summary');
+    },
+  });
+
   const handleGenerateSummary = () => {
     if (!selectedDocumentId) {
       toast.error('Please select a document first');
@@ -68,6 +94,18 @@ export default function Home() {
       bookTitle: bookTitle || undefined,
       bookAuthor: bookAuthor || undefined,
     });
+  };
+
+  const handleDeleteDocument = (documentId: string) => {
+    if (confirm('Are you sure you want to delete this document? This will also delete any associated summaries.')) {
+      deleteDocumentMutation.mutate({ documentId });
+    }
+  };
+
+  const handleDeleteSummary = (summaryId: string) => {
+    if (confirm('Are you sure you want to delete this summary?')) {
+      deleteSummaryMutation.mutate({ summaryId });
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -285,6 +323,14 @@ export default function Home() {
                                 Use for Summary
                               </Button>
                             )}
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteDocument(doc.id)}
+                              disabled={deleteDocumentMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -349,6 +395,14 @@ export default function Home() {
                                 View Summary
                               </Button>
                             )}
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteSummary(summary.id)}
+                              disabled={deleteSummaryMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
                       ))}
