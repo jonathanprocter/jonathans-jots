@@ -34,7 +34,9 @@ export default defineConfig({
     allowedHosts: [
       '.replit.dev',
       '.picard.replit.dev',
-      'localhost'
+      '.repl.co',
+      'localhost',
+      '127.0.0.1'
     ],
     fs: {
       strict: true,
