@@ -209,15 +209,48 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-    : "https://forge.manus.im/v1/chat/completions";
+type ApiConfig = {
+  url: string;
+  headers: Record<string, string>;
+};
 
-const assertApiKey = () => {
-  if (!ENV.forgeApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
+const resolveApiConfig = (): ApiConfig => {
+  const forgeKey = ENV.forgeApiKey?.trim();
+  if (forgeKey) {
+    const base = ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
+      ? ENV.forgeApiUrl.replace(/\/$/, "")
+      : "https://forge.manus.im";
+    return {
+      url: `${base}/v1/chat/completions`,
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${forgeKey}`,
+      },
+    };
   }
+
+  const openAIKey = process.env.OPENAI_API_KEY?.trim();
+  if (openAIKey) {
+    const base = (process.env.OPENAI_BASE_URL || "https://api.openai.com").trim().replace(/\/$/, "");
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+      authorization: `Bearer ${openAIKey}`,
+    };
+    const organization = process.env.OPENAI_ORG_ID?.trim() || process.env.OPENAI_ORGANIZATION?.trim();
+    if (organization) {
+      headers["OpenAI-Organization"] = organization;
+    }
+    const project = process.env.OPENAI_PROJECT_ID?.trim();
+    if (project) {
+      headers["OpenAI-Project"] = project;
+    }
+    return {
+      url: `${base}/v1/chat/completions`,
+      headers,
+    };
+  }
+
+  throw new Error("OPENAI_API_KEY is not configured");
 };
 
 /**
@@ -312,7 +345,7 @@ const normalizeResponseFormat = ({
 };
 
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  assertApiKey();
+  const apiConfig = resolveApiConfig();
 
   const {
     messages,
@@ -369,12 +402,9 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
-      const response = await fetch(resolveApiUrl(), {
+      const response = await fetch(apiConfig.url, {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${ENV.forgeApiKey}`,
-        },
+        headers: apiConfig.headers,
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
