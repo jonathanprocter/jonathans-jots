@@ -31,7 +31,13 @@ export default defineConfig({
       clientPort: 443,
       protocol: 'wss'
     },
-    allowedHosts: true,
+    allowedHosts: [
+      '.replit.dev',
+      '.picard.replit.dev',
+      '.repl.co',
+      'localhost',
+      '127.0.0.1'
+    ],
     fs: {
       strict: true,
       deny: ["**/.*"],
