@@ -5,7 +5,6 @@ import path from "path";
 import { defineConfig } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
-
 const plugins = [react(), tailwindcss(), vitePluginManusRuntime()];
 
 export default defineConfig({
@@ -26,7 +25,17 @@ export default defineConfig({
   },
   server: {
     host: "0.0.0.0",
-    allowedHosts: ['all'],
+    port: 5000,
+    strictPort: true,
+    hmr: {
+      clientPort: 443,
+      protocol: 'wss'
+    },
+    allowedHosts: [
+      '.replit.dev',
+      '.picard.replit.dev',
+      'localhost'
+    ],
     fs: {
       strict: true,
       deny: ["**/.*"],
