@@ -2,12 +2,15 @@
  * Centralised model capability metadata used across providers.
  *
  * The limits below are sourced from the public OpenAI and Anthropic
- * documentation (as of November 2024) and intentionally grouped by
+ * documentation (as of November 2025) and intentionally grouped by
  * family so that newly suffixed releases automatically inherit sane
  * defaults. The goal is to ensure we always request the maximum number
  * of completion tokens supported by a model without exceeding the
- * provider-imposed caps (which previously resulted in request errors
- * for some of the latest models).
+ * provider-imposed caps.
+ *
+ * Latest models:
+ * - OpenAI: gpt-4o (16K output tokens)
+ * - Anthropic: claude-3-5-sonnet-20241022 (8K output tokens)
  */
 
 type ModelLimitRule = {
@@ -16,39 +19,31 @@ type ModelLimitRule = {
 };
 
 const MODEL_LIMIT_RULES: ModelLimitRule[] = [
-  // Anthropic Claude families
+  // Anthropic Claude families (latest models as of 2025)
   {
-    test: model => /^claude-3(?:\.5)?-sonnet/i.test(model),
+    test: model => /^claude-3\.5-sonnet/i.test(model),
     maxOutputTokens: 8192,
   },
   {
-    test: model => /^claude-3(?:\.5)?-opus/i.test(model),
+    test: model => /^claude-3-opus/i.test(model),
     maxOutputTokens: 4096,
   },
   {
-    test: model => /^claude-3(?:\.5)?-haiku/i.test(model),
+    test: model => /^claude-3-sonnet/i.test(model),
     maxOutputTokens: 4096,
   },
-  // OpenAI latest GPT families
   {
-    test: model => /^gpt-4\.1-mini/i.test(model),
-    maxOutputTokens: 16384,
+    test: model => /^claude-3-haiku/i.test(model),
+    maxOutputTokens: 4096,
   },
+  // OpenAI latest GPT families (as of 2025)
   {
-    test: model => /^(?:o4|gpt-4\.1)-mini/i.test(model),
+    test: model => /^gpt-4o/i.test(model),
     maxOutputTokens: 16384,
-  },
-  {
-    test: model => /^gpt-4\.1/i.test(model),
-    maxOutputTokens: 8192,
   },
   {
     test: model => /^gpt-4o-mini/i.test(model),
     maxOutputTokens: 16384,
-  },
-  {
-    test: model => /^gpt-4o/i.test(model),
-    maxOutputTokens: 4096,
   },
   {
     test: model => /^gpt-4-turbo/i.test(model),
@@ -56,12 +51,11 @@ const MODEL_LIMIT_RULES: ModelLimitRule[] = [
   },
   {
     test: model => /^gpt-4/i.test(model),
-    maxOutputTokens: 4096,
+    maxOutputTokens: 8192,
   },
-  // Built-in Forge / Manus models expose higher completion ceilings.
   {
-    test: model => /^manus/i.test(model),
-    maxOutputTokens: 32768,
+    test: model => /^gpt-3\.5-turbo/i.test(model),
+    maxOutputTokens: 4096,
   },
 ];
 

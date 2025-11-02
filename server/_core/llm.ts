@@ -217,20 +217,6 @@ type ApiConfig = {
 };
 
 const resolveApiConfig = (): ApiConfig => {
-  const forgeKey = ENV.forgeApiKey?.trim();
-  if (forgeKey) {
-    const base = ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-      ? ENV.forgeApiUrl.replace(/\/$/, "")
-      : "https://forge.manus.im";
-    return {
-      url: `${base}/v1/chat/completions`,
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${forgeKey}`,
-      },
-    };
-  }
-
   const openAIKey = process.env.OPENAI_API_KEY?.trim();
   if (openAIKey) {
     const base = (process.env.OPENAI_BASE_URL || "https://api.openai.com").trim().replace(/\/$/, "");
@@ -363,7 +349,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
   return withRetry(async () => {
     const payload: Record<string, unknown> = {
-      model: explicitModel || process.env.OPENAI_MODEL || "manus-1.5",
+      model: explicitModel || process.env.OPENAI_MODEL || "gpt-4o",
       messages: messages.map(normalizeMessage),
     };
 

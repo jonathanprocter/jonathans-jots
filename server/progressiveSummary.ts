@@ -126,7 +126,7 @@ export async function generateSummaryWithProgress(
     const prompt = generateShortformPrompt(document.extractedText, bookTitle ?? undefined, bookAuthor ?? undefined);
 
     const hasHostedModel =
-      Boolean(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY || ENV.forgeApiKey);
+      Boolean(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY);
 
     progressStore.set(summaryId, {
       stage: hasHostedModel
