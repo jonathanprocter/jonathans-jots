@@ -32,8 +32,8 @@ YOU MUST FOLLOW THESE RULES TO AVOID GENERATING GARBAGE OUTPUT:
 4. **USE PLAIN TEXT FORMATTING ONLY**
    - DO NOT use markdown syntax (no **, *, #, etc.)
    - DO NOT include raw quote marks or escaped characters
-   - Use \\n\\n for paragraph breaks
-   - Write in clear, professional prose
+   - Use \n\n (actual newline characters) for paragraph breaks between paragraphs
+   - Write in clear, professional prose without any special formatting
 
 DOCUMENT TO ANALYZE:
 ${documentText.slice(0, 100000)}
@@ -62,7 +62,7 @@ QUALITY STANDARDS (Must EXCEED Shortform):
    - Book's core thesis
    - Why this book matters
    - What readers will learn
-   - Use \\n\\n between paragraphs
+   - Use \n\n (actual newlines) between paragraphs
 
 2. **ONE-PAGE SUMMARY (500-750 words, 4-6 paragraphs):**
    - Core thesis statement
@@ -70,7 +70,7 @@ QUALITY STANDARDS (Must EXCEED Shortform):
    - Key supporting evidence from the book
    - Critical takeaways
    - Practical implications
-   - Use \\n\\n between paragraphs
+   - Use \n\n (actual newlines) between paragraphs
 
 3. **DETAILED SECTIONS (5-8 sections):**
    Each section contains:
@@ -78,7 +78,7 @@ QUALITY STANDARDS (Must EXCEED Shortform):
    - 2-4 subsections with specific concepts
    - Each subsection: 300-500 words explaining the concept
    - Include specific examples and evidence from the book
-   - Use \\n\\n for paragraph breaks
+   - Use \n\n (actual newlines) for paragraph breaks
 
 4. **JONATHAN'S JOTS NOTES (100-150 words each):**
    Five types of notes:
@@ -123,15 +123,15 @@ REQUIRED JSON OUTPUT FORMAT:
 {
   "bookTitle": "Exact title of the book",
   "bookAuthor": "Full name of the author",
-  "introduction": "2-3 paragraphs (300-400 words total) in plain text. Use \\n\\n between paragraphs. NO markdown syntax.",
-  "onePageSummary": "4-6 paragraphs (500-750 words total) in plain text. Use \\n\\n between paragraphs. NO markdown syntax.",
+  "introduction": "2-3 paragraphs (300-400 words total) in plain text. Use \n\n (actual newline characters) between paragraphs. NO markdown syntax.",
+  "onePageSummary": "4-6 paragraphs (500-750 words total) in plain text. Use \n\n (actual newline characters) between paragraphs. NO markdown syntax.",
   "sections": [
     {
       "title": "Section or Chapter Title",
       "subsections": [
         {
           "title": "Specific Concept or Key Insight",
-          "content": "300-500 words in plain text explaining this concept. Use \\n\\n for paragraph breaks. NO markdown syntax.",
+          "content": "300-500 words in plain text explaining this concept. Use \n\n (actual newlines) for paragraph breaks. NO markdown syntax.",
           "jotsNotes": [
             {
               "type": "jonathans_jots_note",
@@ -163,12 +163,12 @@ REQUIRED JSON OUTPUT FORMAT:
 
 CRITICAL REMINDERS:
 ✓ Summarize ACTUAL BOOK CONTENT (not testimonials or reviews)
-✓ Use PLAIN TEXT ONLY (no markdown syntax)
+✓ Use PLAIN TEXT ONLY (no markdown syntax like **, *, #, etc.)
 ✓ 4,000-6,000 total words
 ✓ 8-12 research sources
 ✓ 100-150 word Jonathan's Jots notes
 ✓ Valid JSON structure
-✓ Use \\n\\n for paragraph breaks
+✓ Use \n\n (actual newline characters) for paragraph breaks, NOT \\n\\n
 
 Return ONLY the JSON object (no markdown code blocks, no extra text):`;
 }

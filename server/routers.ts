@@ -303,10 +303,17 @@ export const appRouter = router({
         const userId = ctx.user?.id || 'anonymous';
         
         verifySummaryAccess(summary, userId);
-        
-        // Parse mainContent
-        const parsedContent = parseSummaryContent(summary!.mainContent);
-        
+
+        // Parse mainContent JSON string to object
+        let parsedContent: any = { sections: [], researchSources: [] };
+        try {
+          if (summary!.mainContent) {
+            parsedContent = JSON.parse(summary!.mainContent);
+          }
+        } catch (error) {
+          console.error('Failed to parse mainContent for PDF export:', error);
+        }
+
         // Prepare summary data for PDF
         const summaryData = {
           bookTitle: summary!.bookTitle,

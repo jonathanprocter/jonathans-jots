@@ -95,7 +95,7 @@ export function generateSummaryPDF(summary: SummaryData): jsPDF {
 
   // Helper to add paragraphs with spacing
   const addParagraphs = (text: string, fontSize: number = 11): void => {
-    const paragraphs = text.split("\\n\\n");
+    const paragraphs = text.split("\n\n");
     paragraphs.forEach((para) => {
       if (para.trim()) {
         yPosition = addWrappedText(para.trim(), margin, yPosition, maxWidth, fontSize);
