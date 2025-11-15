@@ -41,7 +41,7 @@ function countJotsNotes(parsed: any): number {
   return count;
 }
 import { generateSummaryWithProgress, getProgress } from "./progressiveSummary";
-import { generateSummaryPDF } from "./pdfExport";
+import { generateSummaryPDF, type SummaryData } from "./pdfExport";
 
 export const appRouter = router({
   system: systemRouter,
@@ -304,17 +304,17 @@ export const appRouter = router({
         
         verifySummaryAccess(summary, userId);
         
-        // Parse mainContent
-        const parsedContent = parseSummaryContent(summary!.mainContent);
-        
+        // Parse mainContent into structured data for PDF export
+        const parsedContent = deserializeSummaryContent(summary!.mainContent);
+
         // Prepare summary data for PDF
-        const summaryData = {
+        const summaryData: SummaryData = {
           bookTitle: summary!.bookTitle,
           bookAuthor: summary!.bookAuthor,
           introduction: summary!.introduction || '',
           onePageSummary: summary!.onePageSummary || '',
-          sections: parsedContent.sections || [],
-          researchSources: parsedContent.researchSources || [],
+          sections: parsedContent.sections,
+          researchSources: parsedContent.researchSources,
         };
         
         // Generate PDF
@@ -400,6 +400,100 @@ function parseSummaryContent(content: string | null): string | null {
   } catch (error) {
     console.error('Failed to parse summary content:', error);
     return null;
+  }
+}
+
+type SummaryContent = Pick<SummaryData, 'sections' | 'researchSources'>;
+
+function coerceNotes(value: unknown): SummaryData['sections'][number]['subsections'][number]['jotsNotes'] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter(note => note && typeof note === 'object')
+    .map(note => {
+      const candidate = note as Record<string, unknown>;
+      return {
+        type: typeof candidate.type === 'string' ? candidate.type : 'note',
+        content: typeof candidate.content === 'string' ? candidate.content : '',
+      };
+    })
+    .filter(note => note.content.length > 0);
+}
+
+function coerceSubsections(value: unknown): SummaryData['sections'][number]['subsections'] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter(subsection => subsection && typeof subsection === 'object')
+    .map(subsection => {
+      const candidate = subsection as Record<string, unknown>;
+      return {
+        title: typeof candidate.title === 'string' ? candidate.title : '',
+        content: typeof candidate.content === 'string' ? candidate.content : '',
+        jotsNotes: coerceNotes(candidate.jotsNotes),
+      };
+    })
+    .filter(subsection => subsection.content.length > 0 || subsection.title.length > 0);
+}
+
+function coerceSections(value: unknown): SummaryData['sections'] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter(section => section && typeof section === 'object')
+    .map(section => {
+      const candidate = section as Record<string, unknown>;
+      return {
+        title: typeof candidate.title === 'string' ? candidate.title : '',
+        subsections: coerceSubsections(candidate.subsections),
+      };
+    })
+    .filter(section => section.title.length > 0 || section.subsections.length > 0);
+}
+
+function coerceResearchSources(value: unknown): SummaryData['researchSources'] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter(source => source && typeof source === 'object')
+    .map(source => {
+      const candidate = source as Record<string, unknown>;
+      return {
+        title: typeof candidate.title === 'string' ? candidate.title : 'Reference',
+        author: typeof candidate.author === 'string' ? candidate.author : 'Unknown Author',
+        authorCredentials:
+          typeof candidate.authorCredentials === 'string'
+            ? candidate.authorCredentials
+            : 'Expert commentary',
+        relevance: typeof candidate.relevance === 'string' ? candidate.relevance : '',
+      };
+    })
+    .filter(source => source.relevance.length > 0);
+}
+
+function deserializeSummaryContent(content: string | null): SummaryContent {
+  if (!content) {
+    return { sections: [], researchSources: [] };
+  }
+
+  try {
+    const parsed = JSON.parse(content) as Record<string, unknown>;
+
+    return {
+      sections: coerceSections(parsed.sections),
+      researchSources: coerceResearchSources(parsed.researchSources),
+    };
+  } catch (error) {
+    console.error('Failed to deserialize summary content for export:', error);
+    return { sections: [], researchSources: [] };
   }
 }
 
