@@ -23,7 +23,7 @@ type SanitizedResearchSource = {
   relevance: string;
 };
 
-type SummaryData = {
+export type SummaryData = {
   bookTitle: string | null;
   bookAuthor: string | null;
   introduction: string;

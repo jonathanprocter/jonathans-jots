@@ -2,15 +2,15 @@
  * Centralised model capability metadata used across providers.
  *
  * The limits below are sourced from the public OpenAI and Anthropic
- * documentation (as of November 2025) and intentionally grouped by
+ * documentation (as of October 2024) and intentionally grouped by
  * family so that newly suffixed releases automatically inherit sane
  * defaults. The goal is to ensure we always request the maximum number
  * of completion tokens supported by a model without exceeding the
  * provider-imposed caps.
  *
  * Latest models:
- * - OpenAI: gpt-4o (16K output tokens)
- * - Anthropic: claude-sonnet-4-5-20250929 (64K output tokens)
+ * - OpenAI: gpt-4o-2024-08-06 (16K output tokens)
+ * - Anthropic: claude-3-5-sonnet-20241022 (8K output tokens)
  */
 
 type ModelLimitRule = {
@@ -19,27 +19,18 @@ type ModelLimitRule = {
 };
 
 const MODEL_LIMIT_RULES: ModelLimitRule[] = [
-  // Anthropic Claude families (latest models as of 2025)
+  // Anthropic Claude 3.x family
   {
-    test: model => /^claude-sonnet-4/i.test(model),
-    maxOutputTokens: 64000,
-  },
-  {
-    test: model => /^claude-haiku-4/i.test(model),
-    maxOutputTokens: 64000,
-  },
-  {
-    test: model => /^claude-opus-4/i.test(model),
-    maxOutputTokens: 32000,
-  },
-  // Legacy Claude 3.x models
-  {
-    test: model => /^claude-3\.5-sonnet/i.test(model),
+    test: model => /^claude-3-5-sonnet/i.test(model),
     maxOutputTokens: 8192,
   },
   {
-    test: model => /^claude-3\.7-sonnet/i.test(model),
-    maxOutputTokens: 64000,
+    test: model => /^claude-3-5-haiku/i.test(model),
+    maxOutputTokens: 4096,
+  },
+  {
+    test: model => /^claude-3-7-sonnet/i.test(model),
+    maxOutputTokens: 8192,
   },
   {
     test: model => /^claude-3-opus/i.test(model),
@@ -53,9 +44,13 @@ const MODEL_LIMIT_RULES: ModelLimitRule[] = [
     test: model => /^claude-3-haiku/i.test(model),
     maxOutputTokens: 4096,
   },
-  // OpenAI latest GPT families (as of 2025)
+  // OpenAI GPT-4o + 4.1 families
   {
-    test: model => /^gpt-4o/i.test(model),
+    test: model => /^gpt-4\.1-mini/i.test(model),
+    maxOutputTokens: 12288,
+  },
+  {
+    test: model => /^gpt-4\.1/i.test(model),
     maxOutputTokens: 16384,
   },
   {
@@ -63,8 +58,16 @@ const MODEL_LIMIT_RULES: ModelLimitRule[] = [
     maxOutputTokens: 16384,
   },
   {
+    test: model => /^gpt-4o/i.test(model),
+    maxOutputTokens: 16384,
+  },
+  {
+    test: model => /^o3-mini/i.test(model),
+    maxOutputTokens: 8192,
+  },
+  {
     test: model => /^gpt-4-turbo/i.test(model),
-    maxOutputTokens: 4096,
+    maxOutputTokens: 8192,
   },
   {
     test: model => /^gpt-4/i.test(model),
